@@ -1180,4 +1180,154 @@ void main() {
       expect(rNext.accepted, isTrue);
     });
   });
+
+  group('J — three consecutive outliers mid-cruise', () {
+    test('three consecutive outliers do not inflate total', () {
+      const cfg = GpsFilterConfig(
+        maxHAccuracyM: 25,
+        maxSpeedMps: 16.7,
+        maxAccelMps2: 4.0,
+        minStepM: 3.0,
+        staleMs: 10000,
+        gapMs: 30000,
+      );
+      const speed = 5.0; // m/s
+      const cruiseSecs = 60;
+
+      final anchorPos = _offset(_origin, -speed, 0);
+      final anchorSample = GpsSample(
+        tsMs: -1000,
+        position: anchorPos,
+        hAccuracyM: 5.0,
+      );
+      var state = FilterState(
+        lastRawTsMs: -1000,
+        lastTrusted: anchorSample,
+        anchor: anchorSample,
+        prevSpeedMps: 5.0,
+      );
+      var total = 0.0;
+
+      // True distance as haversine sum of 60 cruise points.
+      double trueDist = 0.0;
+      GeoPoint prevPos = anchorPos;
+      for (var t = 0; t < cruiseSecs; t++) {
+        final pos = _offset(_origin, t * speed, 0);
+        trueDist += haversineMeters(prevPos, pos);
+        prevPos = pos;
+      }
+
+      for (var t = 0; t < cruiseSecs; t++) {
+        final normalPos = _offset(_origin, t * speed, 0);
+        final GeoPoint pos = (t == 30 || t == 31 || t == 32)
+            ? _offset(_origin, t * speed, 60)
+            : normalPos;
+        final p = GpsSample(tsMs: t * 1000, position: pos, hAccuracyM: 5.0);
+        final r = GpsFilter.step(
+          state,
+          p,
+          nowMs: t * 1000,
+          isStationary: false,
+          cfg: cfg,
+        );
+        state = r.newState;
+        total += r.distanceAddedM;
+      }
+
+      expect(total, greaterThanOrEqualTo(trueDist - 20.0 - 0.01));
+      expect(total, lessThanOrEqualTo(trueDist + 0.01));
+    });
+  });
+
+  group('K — persistent 100 m offset for 20 s', () {
+    test('total distance == 0', () {
+      final cfg = GpsFilterConfig(
+        maxHAccuracyM: 25,
+        maxSpeedMps: 16.7,
+        maxAccelMps2: 4.0,
+        minStepM: 3.0,
+        staleMs: 10000,
+        gapMs: 30000,
+      );
+      var state = const FilterState();
+
+      // t=0: anchor at 0 m north
+      final p0 = GpsSample(tsMs: 0, position: _origin, hAccuracyM: 10.0);
+      var r = GpsFilter.step(
+        state,
+        p0,
+        nowMs: 0,
+        isStationary: false,
+        cfg: cfg,
+      );
+      state = r.newState;
+      var total = r.distanceAddedM;
+
+      // t=1..20: points at 100 m north
+      for (var t = 1; t <= 20; t++) {
+        final p = GpsSample(
+          tsMs: t * 1000,
+          position: _offset(_origin, 100, 0),
+          hAccuracyM: 10.0,
+        );
+        r = GpsFilter.step(
+          state,
+          p,
+          nowMs: t * 1000,
+          isStationary: false,
+          cfg: cfg,
+        );
+        state = r.newState;
+        total += r.distanceAddedM;
+      }
+
+      expect(total, 0.0);
+    });
+  });
+
+  group('L — persistent 100 m offset for 60 s', () {
+    test('total distance == 0', () {
+      final cfg = GpsFilterConfig(
+        maxHAccuracyM: 25,
+        maxSpeedMps: 16.7,
+        maxAccelMps2: 4.0,
+        minStepM: 3.0,
+        staleMs: 10000,
+        gapMs: 30000,
+      );
+      var state = const FilterState();
+
+      // t=0: anchor at 0 m north
+      final p0 = GpsSample(tsMs: 0, position: _origin, hAccuracyM: 10.0);
+      var r = GpsFilter.step(
+        state,
+        p0,
+        nowMs: 0,
+        isStationary: false,
+        cfg: cfg,
+      );
+      state = r.newState;
+      var total = r.distanceAddedM;
+
+      // t=1..60: points at 100 m north
+      for (var t = 1; t <= 60; t++) {
+        final p = GpsSample(
+          tsMs: t * 1000,
+          position: _offset(_origin, 100, 0),
+          hAccuracyM: 10.0,
+        );
+        r = GpsFilter.step(
+          state,
+          p,
+          nowMs: t * 1000,
+          isStationary: false,
+          cfg: cfg,
+        );
+        state = r.newState;
+        total += r.distanceAddedM;
+      }
+
+      expect(total, 0.0);
+    });
+  });
 }

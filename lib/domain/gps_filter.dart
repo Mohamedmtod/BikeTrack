@@ -63,8 +63,8 @@ class FilterState {
   /// 0 when there is no lastTrusted or after a gap reset (D-020).
   final double prevSpeedMps;
 
-  /// True when the anchor was just cleared by a conservative rejection
-  /// (impossibleSpeed or spike).  Cleared on every other path.
+  // Set when impossibleSpeed/spike clears the anchor. Persists through checks 1-4 rejections.
+  // Cleared by: successful guarded anchorReset, resetAnchor(), stationary path, gap reset. See D-021.
   final bool anchorClearedConservatively;
 
   const FilterState({
