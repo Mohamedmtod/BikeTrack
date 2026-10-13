@@ -4,87 +4,15 @@
 /// are injected as [int] milliseconds-since-epoch.
 library;
 
-import 'enums.dart';
-import 'geo.dart';
+import '../geo/geo_point.dart';
+import '../geo/haversine.dart';
+import 'filter_result.dart';
+import 'filter_state.dart';
 import 'gps_filter_config.dart';
+import 'gps_sample.dart';
+import 'reject_reason.dart';
 
-// Re-export config so callers can import a single file.
-export 'gps_filter_config.dart';
-
-// ---------------------------------------------------------------------------
-// Data types
-// ---------------------------------------------------------------------------
-
-/// An incoming GPS measurement.
-///
-/// [tsMs] — device timestamp in milliseconds since epoch (NOT wall time).
-/// [position] — WGS-84 coordinates.
-/// [hAccuracyM] — horizontal accuracy radius in metres (σ or 68th percentile).
-class GpsSample {
-  final int tsMs;
-  final GeoPoint position;
-  final double hAccuracyM;
-
-  const GpsSample({
-    required this.tsMs,
-    required this.position,
-    required this.hAccuracyM,
-  });
-}
-
-/// Mutable state carried between [GpsFilter.step] calls.
-///
-/// Three references are kept separate (C3 / D-010 / D-020):
-/// - [lastRawTsMs] — timestamp of every point passing checks 1–4; used for
-///   out-of-order and gap detection.
-/// - [lastTrusted] — last point NOT rejected at checks 6–7; used for
-///   instantaneous speed and spike detection.
-/// - [anchor] — the reference point for distance computation; reset on gaps/stops.
-/// - [prevSpeedMps] — instantaneous speed lastTrusted→current (D-020).
-/// - [anchorClearedConservatively] — true when anchor was cleared by a
-///   conservative rejection (impossibleSpeed / spike); false otherwise.
-///   When true, the next anchorReset candidate is also checked for speed /
-///   spike vs [lastTrusted] to prevent cascades from consecutive outliers.
-class FilterState {
-  /// Timestamp of the last sample that passed checks 1–4 (ordering + gap).
-  /// Null until the very first valid sample.
-  final int? lastRawTsMs;
-
-  /// Last sample that passed checks 1–4 AND was not rejected at checks 6–7.
-  /// Used for instantaneous speed and spike detection (D-020).
-  /// Null until the very first trusted point.
-  final GpsSample? lastTrusted;
-
-  /// Reference point from which distance is accumulated.
-  /// Null = anchor not established; next valid point becomes anchor at distance 0.
-  final GpsSample? anchor;
-
-  /// Instantaneous speed (m/s) from lastTrusted→current at the previous step.
-  /// 0 when there is no lastTrusted or after a gap reset (D-020).
-  final double prevSpeedMps;
-
-  // Set when impossibleSpeed/spike clears the anchor. Persists through checks 1-4 rejections.
-  // Cleared by: successful guarded anchorReset, resetAnchor(), stationary path, gap reset. See D-021.
-  final bool anchorClearedConservatively;
-
-  const FilterState({
-    this.lastRawTsMs,
-    this.lastTrusted,
-    this.anchor,
-    this.prevSpeedMps = 0.0,
-    this.anchorClearedConservatively = false,
-  });
-
-  /// Returns a copy with [anchor] cleared; caller uses this on
-  /// pause / segment-change / relaunch (D-010).
-  FilterState withAnchorCleared() => FilterState(
-    lastRawTsMs: lastRawTsMs,
-    lastTrusted: lastTrusted,
-    anchor: null,
-    prevSpeedMps: prevSpeedMps,
-    anchorClearedConservatively: false, // deliberate reset — not conservative
-  );
-
+extension _FilterStateCopyWith on FilterState {
   FilterState _copyWith({
     int? lastRawTsMs,
     GpsSample? lastTrusted,
@@ -92,44 +20,14 @@ class FilterState {
     bool clearAnchor = false,
     double? prevSpeedMps,
     bool anchorClearedConservatively = false,
-  }) {
-    return FilterState(
-      lastRawTsMs: lastRawTsMs ?? this.lastRawTsMs,
-      lastTrusted: lastTrusted ?? this.lastTrusted,
-      anchor: clearAnchor ? null : (anchor ?? this.anchor),
-      prevSpeedMps: prevSpeedMps ?? this.prevSpeedMps,
-      anchorClearedConservatively: anchorClearedConservatively,
-    );
-  }
-}
-
-/// The value returned by [GpsFilter.step].
-class FilterResult {
-  /// The updated state to pass to the next [GpsFilter.step] call.
-  final FilterState newState;
-
-  /// Whether the point is accepted (contributes to the ride or resets anchor).
-  ///
-  /// true  → point passes all checks (may add distance, reset anchor, or be stationary).
-  /// false → point rejected; [reason] explains why; [distanceAddedM] is always 0.
-  final bool accepted;
-
-  /// Why the point was not accepted outright, or how it was treated specially.
-  /// Null only when [accepted] is true and the point genuinely added distance
-  /// (normal forward movement).
-  final RejectReason? reason;
-
-  /// Distance in metres added to the running total by this point.
-  /// 0 for rejected points, stationary gate, jitter, and anchor-reset.
-  /// Positive only for a genuine forward-movement acceptance (check 10).
-  final double distanceAddedM;
-
-  const FilterResult({
-    required this.newState,
-    required this.accepted,
-    this.reason,
-    this.distanceAddedM = 0.0,
-  });
+  }) => copyWith(
+    lastRawTsMs: lastRawTsMs,
+    lastTrusted: lastTrusted,
+    anchor: anchor,
+    clearAnchor: clearAnchor,
+    prevSpeedMps: prevSpeedMps,
+    anchorClearedConservatively: anchorClearedConservatively,
+  );
 }
 
 // ---------------------------------------------------------------------------

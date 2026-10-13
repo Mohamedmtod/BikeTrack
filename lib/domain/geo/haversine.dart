@@ -1,32 +1,12 @@
 import 'dart:math' as math;
 
+import 'geo_point.dart';
+
 /// Mean Earth radius in meters according to engineering plan §7.1.
 const double earthRadiusMeters = 6371000.0;
 
 /// Converts degrees to radians.
 double _degreesToRadians(double degrees) => degrees * (math.pi / 180.0);
-
-/// Immutable geographic point representation (latDeg, lonDeg) in degrees (D-017).
-class GeoPoint {
-  final double latDeg;
-  final double lonDeg;
-
-  const GeoPoint(this.latDeg, this.lonDeg);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GeoPoint &&
-          runtimeType == other.runtimeType &&
-          latDeg == other.latDeg &&
-          lonDeg == other.lonDeg;
-
-  @override
-  int get hashCode => Object.hash(latDeg, lonDeg);
-
-  @override
-  String toString() => 'GeoPoint($latDeg, $lonDeg)';
-}
 
 /// Calculates the great-circle distance in meters between two coordinates
 /// using the Haversine formula as defined in engineering plan §7.1:
