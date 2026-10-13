@@ -121,7 +121,7 @@ void main() {
     });
   });
 
-  group('Check 4 — outOfOrder (tsMs ≤ lastReceived.tsMs)', () {
+  group('Check 4 — outOfOrder (tsMs ≤ lastRawTsMs)', () {
     test('same timestamp rejected as outOfOrder', () {
       final first = GpsSample(tsMs: 2000, position: _origin, hAccuracyM: 5.0);
       var state = const FilterState();
@@ -468,8 +468,8 @@ void main() {
     },
   );
 
-  group('Straight line 1000 m at 5 m/s, acc 5 m, 1 pt/s → within 1% of 1000', () {
-    test('accumulated distance ≈ 1000 m ± 10 m', () {
+  group('Straight line at 5 m/s, acc 5 m, 1 pt/s → within 1% of true distance', () {
+    test('accumulated distance within 1% of haversine true distance', () {
       // threshold = max(3, 0.5*(5+5)) = 5 m; step = 5 m; 5 >= 5 → barely passes
       // (we use >threshold strictly — 5 m step, threshold 5 → jitter? Let's check:
       //  d < threshold → jitter. 5 < 5 is false → accepted. ✓)
@@ -478,13 +478,18 @@ void main() {
       var state = const FilterState();
       var total = 0.0;
 
+      // Compute true distance as haversine sum of path segments.
+      double trueDist = 0.0;
+      GeoPoint? prevPos;
       for (var i = 0; i <= 200; i++) {
         // 200 steps × 5 m = 1000 m
-        final p = _sample(
-          tsMs: i * 1000,
-          position: _offset(_origin, i * dPerStep, 0),
-          hAccuracyM: acc,
-        );
+        final pos = _offset(_origin, i * dPerStep, 0);
+        if (prevPos != null) {
+          trueDist += haversineMeters(prevPos, pos);
+        }
+        prevPos = pos;
+
+        final p = _sample(tsMs: i * 1000, position: pos, hAccuracyM: acc);
         final r = GpsFilter.step(
           state,
           p,
@@ -495,7 +500,9 @@ void main() {
         state = r.newState;
         total += r.distanceAddedM;
       }
-      expect(total, closeTo(1000.0, 12.0)); // within ~1% (haversine approximation may reduce by up to 12 m over 200 steps)
+      // Within 1% of true haversine distance (+ 0.01 m epsilon).
+      expect(total, greaterThanOrEqualTo(trueDist * 0.99 - 0.01));
+      expect(total, lessThanOrEqualTo(trueDist + 0.01));
     });
   });
 
@@ -571,7 +578,7 @@ void main() {
       // Caller signals pause/segment-change
       state = GpsFilter.resetAnchor(state);
       expect(state.anchor, isNull);
-      expect(state.lastReceived, isNotNull); // lastReceived preserved
+      expect(state.lastTrusted, isNotNull); // lastTrusted preserved
 
       // Next point → anchorReset, distance 0
       final p3 = _sample(tsMs: 10000, position: _offset(_origin, 200, 0));
@@ -757,8 +764,8 @@ void main() {
       expect(r1.newState.prevSpeedMps, closeTo(expectedSpeedJitter, 1e-6));
       state = r1.newState;
 
-      // Accepted step: 15 m in 1 s from lastReceived (at 4 m north)
-      // instantaneous from lastReceived: haversine(4m north, 19m north) / 1s ≈ 15 m/s
+      // Accepted step: 15 m in 1 s from lastTrusted (at 4 m north)
+      // instantaneous from lastTrusted: haversine(4m north, 19m north) / 1s ≈ 15 m/s
       // accel = |15 - 4| / 1 = 11 > 4 → spike! Use a gentler step.
       // Instead: 3 m more in 1 s (from 4 m north to 7 m north), vInst=3/1=3
       // accel = |3-4|/1 = 1 ≤ 4; anchor still p0, d from anchor = 7 m < 10 m → jitter again
@@ -965,10 +972,11 @@ void main() {
   });
 
   group('G — Mid-ride outlier: cruise 5 m/s, one 60 m off-track point at t=30', () {
-    // Warm up with a 5 s step so vInst=1 m/s (no cold-start spike), then
-    // cruise 5 m/s for 60 s (t=5..65). Outlier 60 m east at cruise-second 30
-    // (global t=35). True distance (cruise only) = 5 m/s × 60 s = 300 m.
-    // Assert total ∈ [true - 15, true].
+    // Start from a FilterState already cruising: lastTrusted and anchor at t=-1 s,
+    // position -5 m north (one step behind origin), prevSpeed 5 m/s,
+    // lastRawTsMs = -1000 ms. Cruise 5 m/s for 60 s (t=0..59).
+    // Outlier 60 m east at t=30. True distance = haversine sum of 60 s cruise.
+    // Assert total ∈ [true - 15 m, true] (+ 0.01 m epsilon).
     test('outlier does not inflate total by more than 15 m', () {
       const cfg = GpsFilterConfig(
         maxHAccuracyM: 25,
@@ -979,57 +987,45 @@ void main() {
         gapMs: 30000,
       );
       const speed = 5.0; // m/s
-      const warmUpSecs = 5; // long first step avoids cold-start spike
       const cruiseSecs = 60;
-      const trueDist = speed * cruiseSecs; // 300 m
 
-      var state = const FilterState();
-      var total = 0.0;
-
-      // t=0: anchorReset at origin.
-      final p0 = GpsSample(tsMs: 0, position: _origin, hAccuracyM: 5.0);
-      var r = GpsFilter.step(
-        state,
-        p0,
-        nowMs: 0,
-        isStationary: false,
-        cfg: cfg,
-      );
-      state = r.newState;
-      total += r.distanceAddedM;
-
-      // t=warmUpSecs: 5 m in 5 s → vInst = 1 m/s, accel = 0.2 m/s² ≤ 4 ✓.
-      // d = 5 m = jitter threshold with acc=5 → accepted (not jitter).
-      // Establishes prevSpeed = 1 m/s.
-      final p1 = GpsSample(
-        tsMs: warmUpSecs * 1000,
-        position: _offset(_origin, speed, 0), // 5 m north
+      // Pre-built cruising state (D-020): lastTrusted + anchor at t=-1 s / -5 m north.
+      final anchorPos = _offset(_origin, -speed, 0); // -5 m north
+      final anchorSample = GpsSample(
+        tsMs: -1000,
+        position: anchorPos,
         hAccuracyM: 5.0,
       );
-      r = GpsFilter.step(
-        state,
-        p1,
-        nowMs: warmUpSecs * 1000,
-        isStationary: false,
-        cfg: cfg,
+      var state = FilterState(
+        lastRawTsMs: -1000,
+        lastTrusted: anchorSample,
+        anchor: anchorSample,
+        prevSpeedMps: 5.0,
       );
-      state = r.newState;
-      total += r.distanceAddedM;
+      var total = 0.0;
 
-      // t=warmUpSecs+1 .. warmUpSecs+cruiseSecs: cruise at 5 m/s, 1 Hz.
-      // Outlier at cruise-second 30 (global t = warmUpSecs+30).
-      const outlierCruiseSec = 30;
-      for (var cs = 1; cs <= cruiseSecs; cs++) {
-        final t = warmUpSecs + cs;
-        final normalNorth = speed + cs * speed; // warm-up already did 1×speed
-        final GeoPoint pos;
-        if (cs == outlierCruiseSec) {
-          pos = _offset(_origin, normalNorth, 60); // 60 m east outlier
-        } else {
-          pos = _offset(_origin, normalNorth, 0);
-        }
+      // Compute true distance as haversine sum of 60 cruise points.
+      double trueDist = 0.0;
+      GeoPoint prevPos = anchorPos;
+      for (var t = 0; t < cruiseSecs; t++) {
+        final pos = _offset(
+          _origin,
+          t * speed,
+          0,
+        ); // each step is 5 m north from origin
+        trueDist += haversineMeters(prevPos, pos);
+        prevPos = pos;
+      }
+
+      // Cruise loop.
+      const outlierT = 30;
+      for (var t = 0; t < cruiseSecs; t++) {
+        final normalPos = _offset(_origin, t * speed, 0);
+        final GeoPoint pos = (t == outlierT)
+            ? _offset(_origin, t * speed, 60) // 60 m east outlier
+            : normalPos;
         final p = GpsSample(tsMs: t * 1000, position: pos, hAccuracyM: 5.0);
-        r = GpsFilter.step(
+        final r = GpsFilter.step(
           state,
           p,
           nowMs: t * 1000,
@@ -1039,11 +1035,149 @@ void main() {
         state = r.newState;
         total += r.distanceAddedM;
       }
-      // Total must not inflate by more than 15 m above true cruise distance.
-      // Up to 20 m undercount is accepted: outlier causes 2 spikes and 2 anchor
-      // resets (4 steps × 5 m = 20 m lost), which is within the allowed window.
-      expect(total, greaterThanOrEqualTo(trueDist - 21));
-      expect(total, lessThanOrEqualTo(trueDist));
+      // Total within [true - 15 m, true] (+ 0.01 m epsilon).
+      expect(total, greaterThanOrEqualTo(trueDist - 15.0 - 0.01));
+      expect(total, lessThanOrEqualTo(trueDist + 0.01));
+    });
+  });
+
+  group('H — Two consecutive outliers 60 m off-track mid-cruise → total within [true - 20 m, true]', () {
+    // Start from cruising state (same as G). Two consecutive outliers at t=30, t=31.
+    // Assert total ∈ [true - 20 m, true] (+ 0.01 m epsilon).
+    test('two consecutive outliers do not inflate total', () {
+      const cfg = GpsFilterConfig(
+        maxHAccuracyM: 25,
+        maxSpeedMps: 16.7,
+        maxAccelMps2: 4.0,
+        minStepM: 3.0,
+        staleMs: 10000,
+        gapMs: 30000,
+      );
+      const speed = 5.0; // m/s
+      const cruiseSecs = 60;
+
+      final anchorPos = _offset(_origin, -speed, 0);
+      final anchorSample = GpsSample(
+        tsMs: -1000,
+        position: anchorPos,
+        hAccuracyM: 5.0,
+      );
+      var state = FilterState(
+        lastRawTsMs: -1000,
+        lastTrusted: anchorSample,
+        anchor: anchorSample,
+        prevSpeedMps: 5.0,
+      );
+      var total = 0.0;
+
+      // True distance as haversine sum.
+      double trueDist = 0.0;
+      GeoPoint prevPos = anchorPos;
+      for (var t = 0; t < cruiseSecs; t++) {
+        final pos = _offset(_origin, t * speed, 0);
+        trueDist += haversineMeters(prevPos, pos);
+        prevPos = pos;
+      }
+
+      for (var t = 0; t < cruiseSecs; t++) {
+        final normalPos = _offset(_origin, t * speed, 0);
+        final GeoPoint pos = (t == 30 || t == 31)
+            ? _offset(_origin, t * speed, 60) // two consecutive outliers
+            : normalPos;
+        final p = GpsSample(tsMs: t * 1000, position: pos, hAccuracyM: 5.0);
+        final r = GpsFilter.step(
+          state,
+          p,
+          nowMs: t * 1000,
+          isStationary: false,
+          cfg: cfg,
+        );
+        state = r.newState;
+        total += r.distanceAddedM;
+      }
+      // Total within [true - 20 m, true] (+ 0.01 m epsilon).
+      expect(total, greaterThanOrEqualTo(trueDist - 20.0 - 0.01));
+      expect(total, lessThanOrEqualTo(trueDist + 0.01));
+    });
+  });
+
+  group('I — After outlier, next normal point is NOT rejected as spike', () {
+    // Start from cruising state. Single outlier at t=30.
+    // The point at t=31 (normal, on-track) must be accepted (anchorReset or genuine movement),
+    // NOT rejected as spike (D-020: spike check uses lastTrusted which is not the outlier).
+    test('point after outlier is not rejected as spike', () {
+      const cfg = GpsFilterConfig(
+        maxHAccuracyM: 25,
+        maxSpeedMps: 16.7,
+        maxAccelMps2: 4.0,
+        minStepM: 3.0,
+        staleMs: 10000,
+        gapMs: 30000,
+      );
+      const speed = 5.0; // m/s
+
+      final anchorPos = _offset(_origin, -speed, 0);
+      final anchorSample = GpsSample(
+        tsMs: -1000,
+        position: anchorPos,
+        hAccuracyM: 5.0,
+      );
+      var state = FilterState(
+        lastRawTsMs: -1000,
+        lastTrusted: anchorSample,
+        anchor: anchorSample,
+        prevSpeedMps: 5.0,
+      );
+
+      // Cruise up to t=29.
+      for (var t = 0; t < 30; t++) {
+        final p = GpsSample(
+          tsMs: t * 1000,
+          position: _offset(_origin, t * speed, 0),
+          hAccuracyM: 5.0,
+        );
+        state = GpsFilter.step(
+          state,
+          p,
+          nowMs: t * 1000,
+          isStationary: false,
+          cfg: cfg,
+        ).newState;
+      }
+
+      // Outlier at t=30.
+      final outlier = GpsSample(
+        tsMs: 30000,
+        position: _offset(_origin, 30 * speed, 60), // 60 m east
+        hAccuracyM: 5.0,
+      );
+      final rOutlier = GpsFilter.step(
+        state,
+        outlier,
+        nowMs: 30000,
+        isStationary: false,
+        cfg: cfg,
+      );
+      state = rOutlier.newState;
+      // Outlier must be rejected (spike or impossibleSpeed).
+      expect(rOutlier.accepted, isFalse);
+
+      // Normal point at t=31.
+      final normalNext = GpsSample(
+        tsMs: 31000,
+        position: _offset(_origin, 31 * speed, 0), // back on-track
+        hAccuracyM: 5.0,
+      );
+      final rNext = GpsFilter.step(
+        state,
+        normalNext,
+        nowMs: 31000,
+        isStationary: false,
+        cfg: cfg,
+      );
+      // Must NOT be rejected as spike.
+      expect(rNext.reason, isNot(RejectReason.spike));
+      expect(rNext.accepted, isTrue);
     });
   });
 }

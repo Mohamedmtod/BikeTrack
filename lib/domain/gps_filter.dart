@@ -34,43 +34,71 @@ class GpsSample {
 
 /// Mutable state carried between [GpsFilter.step] calls.
 ///
-/// Both references are kept separate (C3 / D-010):
-/// - [lastReceived] — every point that passes checks 1-4 updates this.
+/// Three references are kept separate (C3 / D-010 / D-020):
+/// - [lastRawTsMs] — timestamp of every point passing checks 1–4; used for
+///   out-of-order and gap detection.
+/// - [lastTrusted] — last point NOT rejected at checks 6–7; used for
+///   instantaneous speed and spike detection.
 /// - [anchor] — the reference point for distance computation; reset on gaps/stops.
-/// - [prevSpeedMps] — instantaneous speed lastReceived→current (D-019).
+/// - [prevSpeedMps] — instantaneous speed lastTrusted→current (D-020).
+/// - [anchorClearedConservatively] — true when anchor was cleared by a
+///   conservative rejection (impossibleSpeed / spike); false otherwise.
+///   When true, the next anchorReset candidate is also checked for speed /
+///   spike vs [lastTrusted] to prevent cascades from consecutive outliers.
 class FilterState {
-  /// Last sample that passed the basic validity checks (1-4).
+  /// Timestamp of the last sample that passed checks 1–4 (ordering + gap).
   /// Null until the very first valid sample.
-  final GpsSample? lastReceived;
+  final int? lastRawTsMs;
+
+  /// Last sample that passed checks 1–4 AND was not rejected at checks 6–7.
+  /// Used for instantaneous speed and spike detection (D-020).
+  /// Null until the very first trusted point.
+  final GpsSample? lastTrusted;
 
   /// Reference point from which distance is accumulated.
   /// Null = anchor not established; next valid point becomes anchor at distance 0.
   final GpsSample? anchor;
 
-  /// Instantaneous speed (m/s) from lastReceived→current at the previous step.
-  /// 0 when there is no lastReceived or after a gap reset (D-019).
+  /// Instantaneous speed (m/s) from lastTrusted→current at the previous step.
+  /// 0 when there is no lastTrusted or after a gap reset (D-020).
   final double prevSpeedMps;
 
-  const FilterState({this.lastReceived, this.anchor, this.prevSpeedMps = 0.0});
+  /// True when the anchor was just cleared by a conservative rejection
+  /// (impossibleSpeed or spike).  Cleared on every other path.
+  final bool anchorClearedConservatively;
+
+  const FilterState({
+    this.lastRawTsMs,
+    this.lastTrusted,
+    this.anchor,
+    this.prevSpeedMps = 0.0,
+    this.anchorClearedConservatively = false,
+  });
 
   /// Returns a copy with [anchor] cleared; caller uses this on
   /// pause / segment-change / relaunch (D-010).
   FilterState withAnchorCleared() => FilterState(
-    lastReceived: lastReceived,
+    lastRawTsMs: lastRawTsMs,
+    lastTrusted: lastTrusted,
     anchor: null,
     prevSpeedMps: prevSpeedMps,
+    anchorClearedConservatively: false, // deliberate reset — not conservative
   );
 
   FilterState _copyWith({
-    GpsSample? lastReceived,
+    int? lastRawTsMs,
+    GpsSample? lastTrusted,
     GpsSample? anchor,
     bool clearAnchor = false,
     double? prevSpeedMps,
+    bool anchorClearedConservatively = false,
   }) {
     return FilterState(
-      lastReceived: lastReceived ?? this.lastReceived,
+      lastRawTsMs: lastRawTsMs ?? this.lastRawTsMs,
+      lastTrusted: lastTrusted ?? this.lastTrusted,
       anchor: clearAnchor ? null : (anchor ?? this.anchor),
       prevSpeedMps: prevSpeedMps ?? this.prevSpeedMps,
+      anchorClearedConservatively: anchorClearedConservatively,
     );
   }
 }
@@ -143,8 +171,8 @@ abstract final class GpsFilter {
     required GpsFilterConfig cfg,
   }) {
     // ------------------------------------------------------------------
-    // Checks 1-4: basic validity.  lastReceived is updated for any point
-    // that clears these four gates.
+    // Checks 1-4: basic validity.  lastRawTsMs is updated for any point
+    // that clears these four gates (D-020).
     // ------------------------------------------------------------------
 
     // 1. Invalid input — sensor error: negative, NaN, or non-finite accuracy;
@@ -178,8 +206,8 @@ abstract final class GpsFilter {
       );
     }
 
-    // 4. Out-of-order delivery.
-    if (s.lastReceived != null && p.tsMs <= s.lastReceived!.tsMs) {
+    // 4. Out-of-order delivery (uses lastRawTsMs per D-020).
+    if (s.lastRawTsMs != null && p.tsMs <= s.lastRawTsMs!) {
       return FilterResult(
         newState: s,
         accepted: false,
@@ -187,42 +215,90 @@ abstract final class GpsFilter {
       );
     }
 
-    // ---- Point has cleared checks 1-4; it will update lastReceived. ----
+    // ---- Point has cleared checks 1-4; it will update lastRawTsMs. ----
 
-    // Compute instantaneous speed from lastReceived to p (D-019).
-    // Used for prevSpeedMps on every path that passes checks 1-4.
+    // Compute instantaneous speed from lastTrusted to p (D-020).
+    // Used for spike detection and prevSpeedMps on trusted paths.
     double instantSpeedMps = 0.0;
-    if (s.lastReceived != null) {
-      final dInst = haversineMeters(s.lastReceived!.position, p.position);
-      final dtR = (p.tsMs - s.lastReceived!.tsMs) / 1000.0;
+    if (s.lastTrusted != null) {
+      final dInst = haversineMeters(s.lastTrusted!.position, p.position);
+      final dtR = (p.tsMs - s.lastTrusted!.tsMs) / 1000.0;
       if (dtR > 0) {
         instantSpeedMps = dInst / dtR;
       }
     }
 
-    // Gap detection: if the time since the previous valid point exceeds
+    // Gap detection: if the time since the previous raw point exceeds
     // gapMs, clear the anchor so we don't compute distance across the gap.
-    // Track whether this null-anchor is from a gap reset or from a prior
-    // conservative clear (impossibleSpeed / spike / stationary).
+    // Uses lastRawTsMs for ordering/gap (D-020).
     GpsSample? newAnchor = s.anchor;
     bool isGapReset = false;
-    if (s.lastReceived != null && (p.tsMs - s.lastReceived!.tsMs) > cfg.gapMs) {
+    if (s.lastRawTsMs != null && (p.tsMs - s.lastRawTsMs!) > cfg.gapMs) {
       newAnchor = null;
       isGapReset = true;
     }
 
     // Anchor not established → this point becomes the anchor at distance 0.
-    // prevSpeedMps (D-019):
-    //   • 0 when there is no lastReceived (first ever point), or after a gap reset.
-    //   • instantSpeedMps when anchor was cleared by conservative policy —
-    //     avoids a cascading spike loop on the first normal step after rejection.
+    // prevSpeedMps (D-020):
+    //   • 0 when there is no lastTrusted (first ever trusted point), or after
+    //     a gap reset.
+    //   • instantaneous from lastTrusted otherwise — avoids cascading spike
+    //     loop on the first normal step after a conservative rejection.
+    //
+    // When the anchor was cleared by a conservative rejection
+    // (anchorClearedConservatively = true), run impossibleSpeed and spike
+    // checks vs. lastTrusted before accepting as anchorReset.  This catches
+    // a second consecutive outlier that would otherwise bypass checks 6-7.
     if (newAnchor == null) {
+      // Guard against consecutive outliers bypassing checks 6-7.
+      if (s.anchorClearedConservatively &&
+          s.lastTrusted != null &&
+          !isGapReset) {
+        // 6-anc. Impossibly fast from lastTrusted (no anchor to compare against).
+        if (instantSpeedMps > cfg.maxSpeedMps) {
+          final newState = FilterState(
+            lastRawTsMs: p.tsMs,
+            lastTrusted: s.lastTrusted,
+            anchor: null,
+            prevSpeedMps: s.prevSpeedMps,
+            anchorClearedConservatively: true,
+          );
+          return FilterResult(
+            newState: newState,
+            accepted: false,
+            reason: RejectReason.impossibleSpeed,
+          );
+        }
+
+        // 7-anc. Spike from lastTrusted (no anchor).
+        final dtR = (p.tsMs - s.lastTrusted!.tsMs) / 1000.0;
+        if (dtR > 0) {
+          final accel = (instantSpeedMps - s.prevSpeedMps).abs() / dtR;
+          if (accel > cfg.maxAccelMps2) {
+            final newState = FilterState(
+              lastRawTsMs: p.tsMs,
+              lastTrusted: s.lastTrusted,
+              anchor: null,
+              prevSpeedMps: s.prevSpeedMps,
+              anchorClearedConservatively: true,
+            );
+            return FilterResult(
+              newState: newState,
+              accepted: false,
+              reason: RejectReason.spike,
+            );
+          }
+        }
+      }
+
       final newState = FilterState(
-        lastReceived: p,
+        lastRawTsMs: p.tsMs,
+        lastTrusted: p,
         anchor: p,
-        prevSpeedMps: (s.lastReceived == null || isGapReset)
+        prevSpeedMps: (s.lastTrusted == null || isGapReset)
             ? 0.0
             : instantSpeedMps,
+        anchorClearedConservatively: false,
       );
       return FilterResult(
         newState: newState,
@@ -244,13 +320,15 @@ abstract final class GpsFilter {
     final vFromAnchor = dtA > 0 ? d / dtA : double.infinity;
 
     // 6. Impossibly fast from anchor.
-    //    Conservative anchor policy (D-019): clear anchor, update lastReceived
-    //    and prevSpeedMps (instantaneous).
+    //    D-020: update lastRawTsMs, clear anchor; do NOT update lastTrusted or
+    //    prevSpeedMps.
     if (vFromAnchor > cfg.maxSpeedMps) {
       final newState = FilterState(
-        lastReceived: p,
-        anchor: null, // conservative: clear anchor (D-019)
-        prevSpeedMps: instantSpeedMps,
+        lastRawTsMs: p.tsMs,
+        lastTrusted: s.lastTrusted, // unchanged (D-020)
+        anchor: null, // conservative: clear anchor
+        prevSpeedMps: s.prevSpeedMps, // unchanged (D-020)
+        anchorClearedConservatively: true,
       );
       return FilterResult(
         newState: newState,
@@ -259,18 +337,20 @@ abstract final class GpsFilter {
       );
     }
 
-    // 7. Spike: instantaneous acceleration from lastReceived exceeds maxAccelMps2.
-    //    Conservative anchor policy (D-019): clear anchor, update lastReceived
-    //    and prevSpeedMps (instantaneous).
-    if (s.lastReceived != null) {
-      final dtR = (p.tsMs - s.lastReceived!.tsMs) / 1000.0;
+    // 7. Spike: instantaneous acceleration from lastTrusted exceeds maxAccelMps2.
+    //    D-020: update lastRawTsMs, clear anchor; do NOT update lastTrusted or
+    //    prevSpeedMps.
+    if (s.lastTrusted != null) {
+      final dtR = (p.tsMs - s.lastTrusted!.tsMs) / 1000.0;
       if (dtR > 0) {
         final accel = (instantSpeedMps - s.prevSpeedMps).abs() / dtR;
         if (accel > cfg.maxAccelMps2) {
           final newState = FilterState(
-            lastReceived: p,
-            anchor: null, // conservative: clear anchor (D-019)
-            prevSpeedMps: instantSpeedMps,
+            lastRawTsMs: p.tsMs,
+            lastTrusted: s.lastTrusted, // unchanged (D-020)
+            anchor: null, // conservative: clear anchor
+            prevSpeedMps: s.prevSpeedMps, // unchanged (D-020)
+            anchorClearedConservatively: true,
           );
           return FilterResult(
             newState: newState,
@@ -282,13 +362,15 @@ abstract final class GpsFilter {
     }
 
     // 8. Stationary gate — activity says the device is not moving.
-    //    Conservative anchor policy (D-019): clear anchor so the next
-    //    moving point starts fresh (no phantom distance on resume).
+    //    D-020: clear anchor, lastTrusted = p, prevSpeed = instantaneous
+    //    (not forced 0 — instantSpeedMps may be 0 if no lastTrusted).
     if (isStationary) {
       final newState = FilterState(
-        lastReceived: p,
-        anchor: null, // conservative: clear anchor (D-019)
-        prevSpeedMps: 0.0, // reset — standing still
+        lastRawTsMs: p.tsMs,
+        lastTrusted: p,
+        anchor: null, // conservative: clear anchor
+        prevSpeedMps: instantSpeedMps,
+        anchorClearedConservatively: false, // deliberate — not conservative
       );
       return FilterResult(
         newState: newState,
@@ -305,9 +387,12 @@ abstract final class GpsFilter {
         : 0.5 * (anchor.hAccuracyM + p.hAccuracyM);
     if (d < jitterThreshold) {
       final newState = s._copyWith(
-        lastReceived: p,
+        lastRawTsMs: p.tsMs,
+        lastTrusted: p,
         anchor: anchor, // unchanged
-        prevSpeedMps: instantSpeedMps, // D-019: always instantaneous
+        prevSpeedMps:
+            instantSpeedMps, // D-020: always instantaneous from lastTrusted
+        anchorClearedConservatively: false,
       );
       return FilterResult(
         newState: newState,
@@ -319,9 +404,12 @@ abstract final class GpsFilter {
 
     // 10. Accepted — genuine forward movement.
     final newState = FilterState(
-      lastReceived: p,
+      lastRawTsMs: p.tsMs,
+      lastTrusted: p,
       anchor: p, // advance anchor
-      prevSpeedMps: instantSpeedMps, // D-019: always instantaneous
+      prevSpeedMps:
+          instantSpeedMps, // D-020: always instantaneous from lastTrusted
+      anchorClearedConservatively: false,
     );
     return FilterResult(
       newState: newState,
@@ -335,7 +423,8 @@ abstract final class GpsFilter {
   // Helper
   // -------------------------------------------------------------------------
 
-  /// Resets the anchor in [s] without touching [lastReceived] or [prevSpeedMps].
+  /// Resets the anchor in [s] without touching [lastRawTsMs], [lastTrusted],
+  /// or [prevSpeedMps].
   ///
   /// Callers MUST invoke this on pause, segment-change, or relaunch (D-010).
   /// The next [step] call will set a fresh anchor at distance 0.

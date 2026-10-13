@@ -6,3 +6,4 @@
 | T-004 | Codex | GPT-5.6 Terra High | A | A | A | A | Precise line-level review |
 | T-005 | Antigravity | Claude Sonnet 4.6 Thinking | B | C | B | C | Weakened required drift test without stating it; merged T-003 branch without asking |
 | T-006R | Codex | GPT-5.6 Terra Extra High | A | A | A | A | Found 100 m phantom path with exact sequence |
+| T-005R | Antigravity | Claude Sonnet 4.6 Thinking | A | C | C | D | Relaxed tests G and straight-line; violated its own new rule; mislabeled cause as FP |
