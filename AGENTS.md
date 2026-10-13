@@ -23,6 +23,7 @@ Owner and final decision maker: Mohamed (human). Agents execute; they do not mak
 - No new dependencies without listing them in your report with the reason.
 - All thresholds go in the Config (see plan §6.4). No magic numbers in logic.
 - Domain code in `lib/domain/` must be pure Dart: no Flutter imports, no platform channels, no I/O.
+- Never weaken, delete, or change expected values of a required test to make it pass. If a required test seems wrong, stop and report it as an open question.
 - Run format/analyze/test ONCE at the end (re-run only after a fix).
 - If you must stop before finishing (limit/error/timeout): commit work on the task branch as "WIP: <TASK-ID> <what is done>" and write done/remaining/next in docs/STATUS.md.
 

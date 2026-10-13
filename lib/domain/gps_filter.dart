@@ -37,7 +37,7 @@ class GpsSample {
 /// Both references are kept separate (C3 / D-010):
 /// - [lastReceived] — every point that passes checks 1-4 updates this.
 /// - [anchor] — the reference point for distance computation; reset on gaps/stops.
-/// - [prevSpeedMps] — speed from anchor→lastReceived, used for spike detection.
+/// - [prevSpeedMps] — instantaneous speed lastReceived→current (D-019).
 class FilterState {
   /// Last sample that passed the basic validity checks (1-4).
   /// Null until the very first valid sample.
@@ -47,7 +47,8 @@ class FilterState {
   /// Null = anchor not established; next valid point becomes anchor at distance 0.
   final GpsSample? anchor;
 
-  /// Speed (m/s) computed at the previous accepted step, for acceleration check.
+  /// Instantaneous speed (m/s) from lastReceived→current at the previous step.
+  /// 0 when there is no lastReceived or after a gap reset (D-019).
   final double prevSpeedMps;
 
   const FilterState({this.lastReceived, this.anchor, this.prevSpeedMps = 0.0});
@@ -146,8 +147,12 @@ abstract final class GpsFilter {
     // that clears these four gates.
     // ------------------------------------------------------------------
 
-    // 1. Negative accuracy — sensor error.
-    if (p.hAccuracyM < 0) {
+    // 1. Invalid input — sensor error: negative, NaN, or non-finite accuracy;
+    //    or non-finite coordinates.
+    if (!p.hAccuracyM.isFinite ||
+        p.hAccuracyM < 0 ||
+        !p.position.latDeg.isFinite ||
+        !p.position.lonDeg.isFinite) {
       return FilterResult(
         newState: s,
         accepted: false,
@@ -184,19 +189,40 @@ abstract final class GpsFilter {
 
     // ---- Point has cleared checks 1-4; it will update lastReceived. ----
 
+    // Compute instantaneous speed from lastReceived to p (D-019).
+    // Used for prevSpeedMps on every path that passes checks 1-4.
+    double instantSpeedMps = 0.0;
+    if (s.lastReceived != null) {
+      final dInst = haversineMeters(s.lastReceived!.position, p.position);
+      final dtR = (p.tsMs - s.lastReceived!.tsMs) / 1000.0;
+      if (dtR > 0) {
+        instantSpeedMps = dInst / dtR;
+      }
+    }
+
     // Gap detection: if the time since the previous valid point exceeds
     // gapMs, clear the anchor so we don't compute distance across the gap.
+    // Track whether this null-anchor is from a gap reset or from a prior
+    // conservative clear (impossibleSpeed / spike / stationary).
     GpsSample? newAnchor = s.anchor;
+    bool isGapReset = false;
     if (s.lastReceived != null && (p.tsMs - s.lastReceived!.tsMs) > cfg.gapMs) {
-      newAnchor = null; // force anchor reset on next step
+      newAnchor = null;
+      isGapReset = true;
     }
 
     // Anchor not established → this point becomes the anchor at distance 0.
+    // prevSpeedMps (D-019):
+    //   • 0 when there is no lastReceived (first ever point), or after a gap reset.
+    //   • instantSpeedMps when anchor was cleared by conservative policy —
+    //     avoids a cascading spike loop on the first normal step after rejection.
     if (newAnchor == null) {
       final newState = FilterState(
         lastReceived: p,
         anchor: p,
-        prevSpeedMps: 0.0,
+        prevSpeedMps: (s.lastReceived == null || isGapReset)
+            ? 0.0
+            : instantSpeedMps,
       );
       return FilterResult(
         newState: newState,
@@ -218,12 +244,13 @@ abstract final class GpsFilter {
     final vFromAnchor = dtA > 0 ? d / dtA : double.infinity;
 
     // 6. Impossibly fast from anchor.
+    //    Conservative anchor policy (D-019): clear anchor, update lastReceived
+    //    and prevSpeedMps (instantaneous).
     if (vFromAnchor > cfg.maxSpeedMps) {
-      // Do not move anchor; update lastReceived and prevSpeed.
-      final newState = s._copyWith(
+      final newState = FilterState(
         lastReceived: p,
-        anchor: anchor,
-        prevSpeedMps: vFromAnchor,
+        anchor: null, // conservative: clear anchor (D-019)
+        prevSpeedMps: instantSpeedMps,
       );
       return FilterResult(
         newState: newState,
@@ -233,17 +260,17 @@ abstract final class GpsFilter {
     }
 
     // 7. Spike: instantaneous acceleration from lastReceived exceeds maxAccelMps2.
+    //    Conservative anchor policy (D-019): clear anchor, update lastReceived
+    //    and prevSpeedMps (instantaneous).
     if (s.lastReceived != null) {
-      final dInst = haversineMeters(s.lastReceived!.position, p.position);
       final dtR = (p.tsMs - s.lastReceived!.tsMs) / 1000.0;
       if (dtR > 0) {
-        final vInst = dInst / dtR;
-        final accel = (vInst - s.prevSpeedMps).abs() / dtR;
+        final accel = (instantSpeedMps - s.prevSpeedMps).abs() / dtR;
         if (accel > cfg.maxAccelMps2) {
-          final newState = s._copyWith(
+          final newState = FilterState(
             lastReceived: p,
-            anchor: anchor,
-            prevSpeedMps: vInst,
+            anchor: null, // conservative: clear anchor (D-019)
+            prevSpeedMps: instantSpeedMps,
           );
           return FilterResult(
             newState: newState,
@@ -255,11 +282,12 @@ abstract final class GpsFilter {
     }
 
     // 8. Stationary gate — activity says the device is not moving.
-    //    Accept the point (store it) but add 0 distance; do NOT move the anchor.
+    //    Conservative anchor policy (D-019): clear anchor so the next
+    //    moving point starts fresh (no phantom distance on resume).
     if (isStationary) {
       final newState = FilterState(
         lastReceived: p,
-        anchor: anchor, // unchanged
+        anchor: null, // conservative: clear anchor (D-019)
         prevSpeedMps: 0.0, // reset — standing still
       );
       return FilterResult(
@@ -279,7 +307,7 @@ abstract final class GpsFilter {
       final newState = s._copyWith(
         lastReceived: p,
         anchor: anchor, // unchanged
-        prevSpeedMps: vFromAnchor,
+        prevSpeedMps: instantSpeedMps, // D-019: always instantaneous
       );
       return FilterResult(
         newState: newState,
@@ -293,7 +321,7 @@ abstract final class GpsFilter {
     final newState = FilterState(
       lastReceived: p,
       anchor: p, // advance anchor
-      prevSpeedMps: vFromAnchor,
+      prevSpeedMps: instantSpeedMps, // D-019: always instantaneous
     );
     return FilterResult(
       newState: newState,

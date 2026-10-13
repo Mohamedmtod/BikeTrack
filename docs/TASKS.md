@@ -59,6 +59,7 @@ Branch: task/T-005-gps-filter
 Plan refs: §7.2, §6.4
 Goal: Implement pure-Dart GPS filter with two-reference design (C3/D-010); full unit tests.
 Allowed files: lib/domain/**, test/domain/**
-Tests required: one per RejectReason + 5 golden scenarios + 1 property test.
-Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes.
-Reviewer: Codex
+Tests required: one per RejectReason + 5 golden scenarios + 1 property test + T-006R tests A-G.
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (46 tests).
+Notes: T-005R fixes applied (D-019 conservative anchor policy). 46 tests green.
+Reviewer: Owner (merge decision)
