@@ -54,5 +54,11 @@ Allowed files: none unless approved
 
 ### T-005 — GpsFilter §7.2
 Owner: Antigravity
-Status: todo
+Status: review
+Branch: task/T-005-gps-filter
+Plan refs: §7.2, §6.4
+Goal: Implement pure-Dart GPS filter with two-reference design (C3/D-010); full unit tests.
 Allowed files: lib/domain/**, test/domain/**
+Tests required: one per RejectReason + 5 golden scenarios + 1 property test.
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes.
+Reviewer: Codex
