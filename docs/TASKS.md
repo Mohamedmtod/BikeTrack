@@ -22,7 +22,7 @@ Reviewer: <other agent or owner>
 
 ### T-001 — Agent dry-run (Antigravity)
 Owner: Antigravity
-Status: todo
+Status: done
 Branch: none (read-only)
 Goal: Prove the agent loads AGENTS.md and the docs correctly.
 Allowed files: none (read-only task)
@@ -31,12 +31,12 @@ Acceptance criteria: Reply with (1) the 5 most important hard rules, (2) D-007, 
 
 ### T-002 — Agent dry-run (Codex)
 Owner: Codex
-Status: todo
+Status: done
 Same as T-001.
 
 ### T-003 — Domain skeleton + haversine
 Owner: Antigravity
-Status: todo
+Status: review
 Branch: task/T-003-domain-geo
 Plan refs: §5.1, §7.1
 Goal: Create pure-Dart enums and a haversine function with tests.

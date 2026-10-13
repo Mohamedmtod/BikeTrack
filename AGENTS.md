@@ -24,6 +24,11 @@ Owner and final decision maker: Mohamed (human). Agents execute; they do not mak
 - All thresholds go in the Config (see plan §6.4). No magic numbers in logic.
 - Domain code in `lib/domain/` must be pure Dart: no Flutter imports, no platform channels, no I/O.
 
+## Owner vs agent responsibilities
+Agents do: code, tests, docs/STATUS.md and docs/TASKS.md updates, commits on task branches, pushing task branches, opening the final report.
+Owner only: merging to main, approving decisions, anything involving accounts/payments/signing, running the app on the iPhone.
+Agents must list any step they could not do under "Owner actions needed" in the report.
+
 ## Environment
 - Dev machine: Windows. iOS build/sign/run is NOT possible locally.
 - Runnable on Windows: `flutter analyze`, `flutter test`, `dart format`.
