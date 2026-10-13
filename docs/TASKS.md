@@ -22,7 +22,7 @@ Reviewer: <other agent or owner>
 
 ### T-001 — Agent dry-run (Antigravity)
 Owner: Antigravity
-Status: todo
+Status: done
 Branch: none (read-only)
 Goal: Prove the agent loads AGENTS.md and the docs correctly.
 Allowed files: none (read-only task)
@@ -31,12 +31,12 @@ Acceptance criteria: Reply with (1) the 5 most important hard rules, (2) D-007, 
 
 ### T-002 — Agent dry-run (Codex)
 Owner: Codex
-Status: todo
+Status: done
 Same as T-001.
 
 ### T-003 — Domain skeleton + haversine
 Owner: Antigravity
-Status: todo
+Status: review
 Branch: task/T-003-domain-geo
 Plan refs: §5.1, §7.1
 Goal: Create pure-Dart enums and a haversine function with tests.
@@ -47,7 +47,19 @@ Reviewer: Codex (T-004)
 
 ### T-004 — Review T-003
 Owner: Codex
-Status: todo
+Status: done
 Branch: review only (comments), fixes only if owner approves
 Goal: Review diff of T-003 against AGENTS.md + D-003; run tests; report.
 Allowed files: none unless approved
+
+### T-005 — GpsFilter §7.2
+Owner: Antigravity
+Status: review
+Branch: task/T-005-gps-filter
+Plan refs: §7.2, §6.4
+Goal: Implement pure-Dart GPS filter with two-reference design (C3/D-010); full unit tests.
+Allowed files: lib/domain/**, test/domain/**
+Tests required: one per RejectReason + 5 golden scenarios + 1 property test + T-006R tests A-I.
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (32 tests).
+Notes: T-005R2 applies D-020 split-baseline (lastRawTsMs + lastTrusted + anchorClearedConservatively). 32 tests green.
+Reviewer: Owner (merge decision)

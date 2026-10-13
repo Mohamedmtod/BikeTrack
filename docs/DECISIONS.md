@@ -1,6 +1,7 @@
 # DECISIONS — BikeTrack
 
 Settled decisions. Agents must not reopen these. To change one: add a new entry with status "Proposed" and wait for the owner.
+Rule: never edit an old decision's text. Add a new decision and set the old one's Status to "Accepted — amended by D-XXX" or "Superseded by D-XXX".
 
 | ID | Decision | Reason | Status |
 |---|---|---|---|
@@ -20,3 +21,8 @@ Settled decisions. Agents must not reopen these. To change one: add a new entry 
 | D-014 | All thresholds in Config; initial values are hypotheses | Tuned from field data | Accepted |
 | D-015 | Pigeon for Dart↔Swift contract | Typed contract | Accepted |
 | D-016 | Antigravity = main implementer; Codex = review/tests/independent tasks; no two agents on same files concurrently | Avoid conflicts | Accepted |
+| D-017 | GeoPoint: immutable value type (latDeg, lonDeg) in lib/domain, no behavior except equality | Needed by GpsFilter (§7.2); approved after T-004 | Accepted |
+| D-018 | GpsSample (tsMs, GeoPoint, hAccuracyM) + FilterState (lastReceived, anchor, prevSpeedMps) + GpsFilterConfig in lib/domain; filter is a pure function | Needed for §7.2 | Accepted — amended by D-020, D-021 |
+| D-019 | Conservative anchor policy: clear anchor on impossibleSpeed, spike, and isStationary=true (confirmed stationary). prevSpeedMps = instantaneous speed lastReceived->current, always. Non-finite inputs are invalid. Undercount is preferred over phantom distance. | T-006R blocker + majors | Accepted — amended by D-020 |
+| D-020 | Amends D-019: split baseline. lastRawTsMs (ordering + gap) is updated by every point passing checks 1–4. lastTrusted (point) + prevSpeedMps are updated ONLY by points NOT rejected at checks 6–7. prevSpeedMps = instantaneous lastTrusted->current on every non-rejected path, including stationary. Anchor clearing from D-019 is unchanged. | Spike cascade after one outlier lost ~20 m | Accepted |
+| D-021 | Consecutive-outlier anchor guard: when impossibleSpeed or spike clears the anchor, set anchorClearedConservatively=true. Until a successful anchor reset, explicit resetAnchor, stationary path, or gap reset clears it, a non-gap anchor-reset candidate must pass speed and acceleration checks against lastTrusted with prevSpeedMps unchanged; rejected candidates update only lastRawTsMs; a successful reset adds 0 m. | Prevents consecutive outliers from becoming anchors while keeping conservative undercount | Accepted |
