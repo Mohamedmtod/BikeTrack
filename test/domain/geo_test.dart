@@ -5,98 +5,90 @@ import 'package:biketrack/domain/geo.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Haversine distance', () {
+  group('Haversine distance (haversineMeters)', () {
     test('same point returns exactly 0.0', () {
-      expect(haversineDistance(0.0, 0.0, 0.0, 0.0), equals(0.0));
       expect(
-        haversineDistance(30.0444, 31.2357, 30.0444, 31.2357),
+        haversineMeters(const GeoPoint(0.0, 0.0), const GeoPoint(0.0, 0.0)),
         equals(0.0),
       );
       expect(
-        haversineDistance(-33.8688, 151.2093, -33.8688, 151.2093),
+        haversineMeters(
+          const GeoPoint(30.0444, 31.2357),
+          const GeoPoint(30.0444, 31.2357),
+        ),
+        equals(0.0),
+      );
+      expect(
+        haversineMeters(
+          const GeoPoint(-33.8688, 151.2093),
+          const GeoPoint(-33.8688, 151.2093),
+        ),
         equals(0.0),
       );
     });
 
     test('known value: 0.001° latitude is ~111.2 m (within ±0.5 m)', () {
-      final distanceEquator = haversineDistance(0.0, 0.0, 0.001, 0.0);
+      final distanceEquator = haversineMeters(
+        const GeoPoint(0.0, 0.0),
+        const GeoPoint(0.001, 0.0),
+      );
       expect(distanceEquator, closeTo(111.2, 0.5));
 
-      final distanceMeridian = haversineDistance(51.500, 10.0, 51.501, 10.0);
+      final distanceMeridian = haversineMeters(
+        const GeoPoint(51.500, 10.0),
+        const GeoPoint(51.501, 10.0),
+      );
       expect(distanceMeridian, closeTo(111.2, 0.5));
     });
 
     test('antimeridian crossing calculates shortest great-circle path', () {
       // 0.002° total difference across the 180° meridian at equator
-      final distanceAcrossAntimeridian = haversineDistance(
-        0.0,
-        179.999,
-        0.0,
-        -179.999,
+      final distanceAcrossAntimeridian = haversineMeters(
+        const GeoPoint(0.0, 179.999),
+        const GeoPoint(0.0, -179.999),
       );
       expect(distanceAcrossAntimeridian, closeTo(222.39, 0.5));
 
       // At 60° latitude, cos(60°) = 0.5, so 0.002° delta is ~111.2 m
-      final distanceAt60Lat = haversineDistance(60.0, 179.999, 60.0, -179.999);
+      final distanceAt60Lat = haversineMeters(
+        const GeoPoint(60.0, 179.999),
+        const GeoPoint(60.0, -179.999),
+      );
       expect(distanceAt60Lat, closeTo(111.2, 0.5));
 
       // 180° and -180° are identical meridians
-      final sameMeridianDistance = haversineDistance(25.0, 180.0, 25.0, -180.0);
+      final sameMeridianDistance = haversineMeters(
+        const GeoPoint(25.0, 180.0),
+        const GeoPoint(25.0, -180.0),
+      );
       expect(sameMeridianDistance, closeTo(0.0, 1e-6));
     });
 
     test('is symmetric: dist(a, b) == dist(b, a)', () {
-      const lat1 = 40.7128;
-      const lon1 = -74.0060;
-      const lat2 = 34.0522;
-      const lon2 = -118.2437;
+      const p1 = GeoPoint(40.7128, -74.0060);
+      const p2 = GeoPoint(34.0522, -118.2437);
 
-      final d1 = haversineDistance(lat1, lon1, lat2, lon2);
-      final d2 = haversineDistance(lat2, lon2, lat1, lon1);
+      final d1 = haversineMeters(p1, p2);
+      final d2 = haversineMeters(p2, p1);
       expect(d1, closeTo(d2, 1e-9));
     });
 
     test('antipodal points return half Earth circumference', () {
       // North pole to South pole
-      final poleToPole = haversineDistance(90.0, 0.0, -90.0, 0.0);
+      final poleToPole = haversineMeters(
+        const GeoPoint(90.0, 0.0),
+        const GeoPoint(-90.0, 0.0),
+      );
       final expected = math.pi * earthRadiusMeters;
       expect(poleToPole, closeTo(expected, 1.0));
-    });
-
-    test('haversine alias behaves identically to haversineDistance', () {
-      const lat1 = 52.5200;
-      const lon1 = 13.4050;
-      const lat2 = 48.8566;
-      const lon2 = 2.3522;
-
-      expect(
-        haversine(lat1, lon1, lat2, lon2),
-        equals(haversineDistance(lat1, lon1, lat2, lon2)),
-      );
-    });
-
-    test('custom radius is respected', () {
-      // Unit sphere radius = 1.0 gives central angle in radians
-      final radians = haversineDistance(0.0, 0.0, 90.0, 0.0, radius: 1.0);
-      expect(radians, closeTo(math.pi / 2.0, 1e-9));
     });
   });
 
   group('GeoPoint', () {
-    test('GeoPoint distanceTo matches haversineDistance', () {
-      const p1 = GeoPoint(latitude: 30.0444, longitude: 31.2357);
-      const p2 = GeoPoint(latitude: 31.2001, longitude: 29.9187);
-
-      expect(
-        p1.distanceTo(p2),
-        equals(haversineDistance(30.0444, 31.2357, 31.2001, 29.9187)),
-      );
-    });
-
     test('GeoPoint value equality and hashCode', () {
-      const p1 = GeoPoint(latitude: 10.0, longitude: 20.0);
-      const p2 = GeoPoint(latitude: 10.0, longitude: 20.0);
-      const p3 = GeoPoint(latitude: 10.0, longitude: 20.1);
+      const p1 = GeoPoint(10.0, 20.0);
+      const p2 = GeoPoint(10.0, 20.0);
+      const p3 = GeoPoint(10.0, 20.1);
 
       expect(p1, equals(p2));
       expect(p1.hashCode, equals(p2.hashCode));

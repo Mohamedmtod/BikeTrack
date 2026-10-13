@@ -20,3 +20,4 @@ Settled decisions. Agents must not reopen these. To change one: add a new entry 
 | D-014 | All thresholds in Config; initial values are hypotheses | Tuned from field data | Accepted |
 | D-015 | Pigeon for Dart↔Swift contract | Typed contract | Accepted |
 | D-016 | Antigravity = main implementer; Codex = review/tests/independent tasks; no two agents on same files concurrently | Avoid conflicts | Accepted |
+| D-017 | GeoPoint: immutable value type (latDeg, lonDeg) in lib/domain, no behavior except equality | Needed by GpsFilter (§7.2); approved after T-004 | Accepted |

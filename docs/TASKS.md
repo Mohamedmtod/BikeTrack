@@ -47,7 +47,12 @@ Reviewer: Codex (T-004)
 
 ### T-004 — Review T-003
 Owner: Codex
-Status: todo
+Status: done
 Branch: review only (comments), fixes only if owner approves
 Goal: Review diff of T-003 against AGENTS.md + D-003; run tests; report.
 Allowed files: none unless approved
+
+### T-005 — GpsFilter §7.2
+Owner: Antigravity
+Status: todo
+Allowed files: lib/domain/**, test/domain/**

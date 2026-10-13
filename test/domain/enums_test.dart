@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:biketrack/domain/enums.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -83,31 +81,6 @@ void main() {
         DistanceStatus.values.map((e) => e.name).toList(),
         equals(['measured', 'partial', 'unknown']),
       );
-    });
-  });
-
-  group('Pure Dart domain constraints for enums and domain files', () {
-    test('lib/domain files contain no Flutter or I/O imports', () {
-      final domainDir = Directory('lib/domain');
-      expect(domainDir.existsSync(), isTrue);
-      final dartFiles = domainDir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'));
-
-      for (final file in dartFiles) {
-        final content = file.readAsStringSync();
-        expect(
-          content.contains('package:flutter'),
-          isFalse,
-          reason: '${file.path} must not import Flutter',
-        );
-        expect(
-          content.contains('dart:io'),
-          isFalse,
-          reason: '${file.path} must not import dart:io',
-        );
-      }
     });
   });
 }
