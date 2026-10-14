@@ -2,8 +2,13 @@
 
 lib/main.dart — Flutter application entry point and counter sample widget
 lib/domain/domain.dart — Barrel exporting the public domain interface
+lib/domain/activity/activity_classifier.dart — Pure function activity classification from sensor windows
+lib/domain/activity/activity_classifier_config.dart — Weights and trapezoid speed thresholds for ActivityClassifier
 lib/domain/activity/activity_type.dart — Physical activity classification enum
+lib/domain/activity/activity_window.dart — Pre-aggregated sensor window model for ActivityClassifier
+lib/domain/activity/classification_result.dart — Result model containing scores, best score, margin, and type
 lib/domain/activity/classification_source.dart — Source determining activity classification enum
+lib/domain/activity/membership.dart — Trapezoidal membership function calculation
 lib/domain/geo/geo_point.dart — Immutable geographic coordinate representation
 lib/domain/geo/haversine.dart — Great-circle distance calculation using Haversine formula
 lib/domain/gps/filter_result.dart — Result model returned by GPS filter step
@@ -20,8 +25,10 @@ lib/domain/trip/segment_type.dart — Trip segment activity type enum
 lib/domain/trip/trip_status.dart — Lifecycle status enum of a recorded trip
 test/helpers/gps_helpers.dart — Shared helper functions and test fixture constants
 test/widget_test.dart — Smoke test for default counter widget
+test/domain/activity/activity_classifier_test.dart — Unit and property tests for ActivityClassifier
 test/domain/activity/activity_type_test.dart — Unit test for ActivityType enum values
 test/domain/activity/classification_source_test.dart — Unit test for ClassificationSource enum values
+test/domain/activity/membership_test.dart — Unit tests for trapezoidal membership function
 test/domain/geo/geo_point_test.dart — Unit tests for GeoPoint equality and toString
 test/domain/geo/haversine_test.dart — Unit tests for Haversine distance and pure Dart constraint
 test/domain/gps/gps_filter_checks_test.dart — Unit tests for individual GPS filter checks and resetAnchor

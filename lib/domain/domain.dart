@@ -1,5 +1,10 @@
+export 'activity/activity_classifier.dart';
+export 'activity/activity_classifier_config.dart';
 export 'activity/activity_type.dart';
+export 'activity/activity_window.dart';
+export 'activity/classification_result.dart';
 export 'activity/classification_source.dart';
+export 'activity/membership.dart';
 export 'geo/geo_point.dart';
 export 'geo/haversine.dart';
 export 'gps/filter_result.dart';

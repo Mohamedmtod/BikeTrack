@@ -66,11 +66,23 @@ Reviewer: Owner (merged to main)
 
 ### T-007 — Code tree refactor
 Owner: Antigravity
-Status: review
+Status: done
 Branch: task/T-007-code-tree
 Goal: Pure move refactor into feature tree (geo/, gps/, activity/, trip/, shared/), CODEMAP, and code rules.
 Allowed files: lib/**, test/**, docs/**, AGENTS.md, .agents/**
 Tests required: full suite passes with identical assertions (51 tests, 110 expect calls).
 Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (51 tests), CODEMAP.md created, no file > 250 lines except gps_filter.dart.
-Reviewer: Owner
+Reviewer: Owner (merged to main)
+
+### T-008 — ActivityClassifier §7.6
+Owner: Antigravity
+Status: review
+Branch: task/T-008-activity-classifier
+Plan refs: §7.6, D-022
+Goal: Pure function activity classification over pre-aggregated ActivityWindow with trapezoid memberships and test suite.
+Allowed files: lib/domain/activity/**, lib/domain/domain.dart, test/domain/activity/**, docs/**
+Tests required: 9 membership tests + 9 classifier scenario/property tests.
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (69 tests).
+Reviewer: Owner / Codex
+
 
