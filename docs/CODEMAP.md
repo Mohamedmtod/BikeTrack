@@ -27,8 +27,18 @@ lib/domain/shared/confidence.dart — Confidence level enum for detections and c
 lib/domain/shared/event_source.dart — Originating source enum of domain events
 lib/domain/shared/recording_state.dart — Recording fidelity and power state enum
 lib/domain/trip/distance_status.dart — Distance reliability indicator enum
+lib/domain/trip/gps_mode.dart — GPS power/accuracy mode enum commanded by TripStateMachine
 lib/domain/trip/segment_type.dart — Trip segment activity type enum
+lib/domain/trip/trip_command.dart — Sealed command hierarchy with value equality produced by TripStateMachine
+lib/domain/trip/trip_event.dart — Sealed event hierarchy consumed by TripStateMachine
+lib/domain/trip/trip_state.dart — Immutable trip state with idle factory, isIdle getter, and copyWith
+lib/domain/trip/trip_state_machine.dart — Pure-Dart trip state machine dispatcher (time check, activity store, dispatch)
 lib/domain/trip/trip_status.dart — Lifecycle status enum of a recorded trip
+lib/domain/trip/trip_step_result.dart — Result model containing state and command list from one machine step
+lib/domain/trip/transitions/active_transitions.dart — Active status transition rules (stop, pause, mode change)
+lib/domain/trip/transitions/idle_transitions.dart — Idle and completed status transition rules
+lib/domain/trip/transitions/paused_transitions.dart — Paused status transition rules (resume, stop, open-trip guard)
+lib/domain/trip/transitions/pending_transitions.dart — Pending status transition rules (cycling detect, timeout)
 test/helpers/gps_helpers.dart — Shared helper functions and test fixture constants
 test/widget_test.dart — Smoke test for default counter widget
 test/domain/activity/activity_classifier_config_test.dart — Unit tests for ActivityClassifierConfig assert validation
@@ -49,5 +59,8 @@ test/domain/shared/confidence_test.dart — Unit test for Confidence enum values
 test/domain/shared/event_source_test.dart — Unit test for EventSource enum values
 test/domain/shared/recording_state_test.dart — Unit test for RecordingState enum values
 test/domain/trip/distance_status_test.dart — Unit test for DistanceStatus enum values
+test/domain/trip/scenarios/active_paused_test.dart — Scenario tests 9–17, 20 for active and paused TripStateMachine transitions
+test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for idle and pending TripStateMachine transitions
+test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22 (500-event property test)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values
 test/domain/trip/trip_status_test.dart — Unit test for TripStatus enum values
