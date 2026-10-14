@@ -26,7 +26,6 @@ test/domain/geo/geo_point_test.dart — Unit tests for GeoPoint equality and toS
 test/domain/geo/haversine_test.dart — Unit tests for Haversine distance and pure Dart constraint
 test/domain/gps/gps_filter_checks_test.dart — Unit tests for individual GPS filter checks and resetAnchor
 test/domain/gps/scenarios/drift_test.dart — Scenario tests for stationary drift and noise rejection
-test/domain/gps/scenarios/misc_test.dart — Tests for invalid GPS inputs with NaN and infinity
 test/domain/gps/scenarios/motion_test.dart — Scenario tests for straight line motion and gap recovery
 test/domain/gps/scenarios/outlier_test.dart — Scenario tests for single and consecutive GPS outliers
 test/domain/shared/confidence_test.dart — Unit test for Confidence enum values
