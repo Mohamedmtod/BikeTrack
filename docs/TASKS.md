@@ -82,7 +82,7 @@ Plan refs: §7.6, D-022
 Goal: Pure function activity classification over pre-aggregated ActivityWindow with trapezoid memberships and test suite.
 Allowed files: lib/domain/activity/**, lib/domain/domain.dart, test/domain/activity/**, docs/**
 Tests required: 9 membership tests + 9 classifier scenario/property tests.
-Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (69 tests).
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (82 tests).
 Reviewer: Owner / Codex
 
 

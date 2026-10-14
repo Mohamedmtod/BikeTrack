@@ -54,5 +54,34 @@ class ActivityClassifierConfig {
     this.autoSpeedB = 8.0,
     this.autoSpeedC = double.infinity,
     this.autoSpeedD = double.infinity,
-  });
+  }) : assert(w1 >= 0),
+       assert(w2 >= 0),
+       assert(w3 >= 0),
+       assert(w5 >= 0),
+       assert(confLow >= 0),
+       assert(confMedium >= 0),
+       assert(confHigh >= 0),
+       assert(confLow <= 1),
+       assert(confMedium <= 1),
+       assert(confHigh <= 1),
+       assert(w1 + w2 + w3 <= 1),
+       assert(w1 + w2 + w5 <= 1),
+       assert(minBestScore >= 0 && minBestScore <= 1),
+       assert(minMargin >= 0 && minMargin <= 1),
+       assert(cadenceFull > 0),
+       assert(
+         walkSpeedA <= walkSpeedB &&
+             walkSpeedB <= walkSpeedC &&
+             walkSpeedC <= walkSpeedD,
+       ),
+       assert(
+         cycleSpeedA <= cycleSpeedB &&
+             cycleSpeedB <= cycleSpeedC &&
+             cycleSpeedC <= cycleSpeedD,
+       ),
+       assert(
+         autoSpeedA <= autoSpeedB &&
+             autoSpeedB <= autoSpeedC &&
+             autoSpeedC <= autoSpeedD,
+       );
 }

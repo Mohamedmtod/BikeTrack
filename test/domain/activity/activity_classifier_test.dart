@@ -116,5 +116,173 @@ void main() {
         }
       }
     });
+
+    test('11 NaN cadence = missing: cm={cycling}, high, speed 5, cadence NaN -> cycling, score 0.85', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.cycling},
+        cmConfidence: Confidence.high,
+        speedMps: 5.0,
+        cadenceSps: double.nan,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.cycling);
+      expect(r.scores[ActivityType.cycling], closeTo(0.85, 1e-9));
+    });
+
+    test('12 negative cadence = missing: same with cadence -1 -> cycling, score 0.85', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.cycling},
+        cmConfidence: Confidence.high,
+        speedMps: 5.0,
+        cadenceSps: -1.0,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.cycling);
+      expect(r.scores[ActivityType.cycling], closeTo(0.85, 1e-9));
+    });
+
+    test('13 negative speed = missing: cm={}, speed -3, cadence null -> unknown, all scores 0', () {
+      const w = ActivityWindow(speedMps: -3.0);
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.unknown);
+      for (final s in r.scores.values) {
+        expect(s, closeTo(0.0, 1e-9));
+      }
+    });
+
+    test('14 +Infinity speed = missing: cm={}, speed +inf -> unknown, all scores 0 (NOT automotive)', () {
+      const w = ActivityWindow(speedMps: double.infinity);
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.unknown);
+      for (final s in r.scores.values) {
+        expect(s, closeTo(0.0, 1e-9));
+      }
+    });
+
+    test('15 stopPattern out of range = missing: cm={automotive}, high, speed 10, stop 1.5 -> automotive 0.85', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.automotive},
+        cmConfidence: Confidence.high,
+        speedMps: 10.0,
+        stopPatternScore: 1.5,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.automotive);
+      expect(r.scores[ActivityType.automotive], closeTo(0.85, 1e-9));
+    });
+
+    test(
+      '16 stopPattern NaN = missing: same with stop NaN -> automotive 0.85',
+      () {
+        const w = ActivityWindow(
+          cmTypes: {ActivityType.automotive},
+          cmConfidence: Confidence.high,
+          speedMps: 10.0,
+          stopPatternScore: double.nan,
+        );
+        final r = ActivityClassifier.classify(w);
+        expect(r.type, ActivityType.automotive);
+        expect(r.scores[ActivityType.automotive], closeTo(0.85, 1e-9));
+      },
+    );
+
+    test('17 car at red light: cm={automotive, stationary}, high, speed 0.2 -> automotive 0.55, stationary 0.30, type automotive', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.automotive, ActivityType.stationary},
+        cmConfidence: Confidence.high,
+        speedMps: 0.2,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.automotive);
+      expect(r.scores[ActivityType.automotive], closeTo(0.55, 1e-9));
+      expect(r.scores[ActivityType.stationary], closeTo(0.30, 1e-9));
+    });
+
+    test('18 ambiguous CM: cm={cycling, walking}, high, speed 5, cadence null -> cycling 0.30, type unknown', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.cycling, ActivityType.walking},
+        cmConfidence: Confidence.high,
+        speedMps: 5.0,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.unknown);
+      expect(r.scores[ActivityType.cycling], closeTo(0.30, 1e-9));
+    });
+
+    test('19 running CM ignored: cm={running}, high, speed 3.0, cadence 2.7 -> cycling 0.30, walking 0.15, type unknown', () {
+      const w = ActivityWindow(
+        cmTypes: {ActivityType.running},
+        cmConfidence: Confidence.high,
+        speedMps: 3.0,
+        cadenceSps: 2.7,
+      );
+      final r = ActivityClassifier.classify(w);
+      expect(r.type, ActivityType.unknown);
+      expect(r.scores[ActivityType.cycling], closeTo(0.30, 1e-9));
+      expect(r.scores[ActivityType.walking], closeTo(0.15, 1e-9));
+    });
+
+    test('20 property: 200 windows from Random(42) including NaN, +/-inf, negatives, stop in [-1,2] -> every score finite and in [0,1]', () {
+      final rng = math.Random(42);
+      final badOrGoodValues = <double?>[
+        null,
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+        -10.0,
+        -1.0,
+        -0.01,
+        0.0,
+        0.5,
+        1.0,
+        2.0,
+        5.0,
+        10.0,
+        50.0,
+      ];
+      final stopValues = <double?>[
+        null,
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+        -1.0,
+        -0.5,
+        0.0,
+        0.3,
+        0.7,
+        1.0,
+        1.5,
+        2.0,
+      ];
+
+      for (var i = 0; i < 200; i++) {
+        final cmTypes = <ActivityType>{};
+        for (final t in ActivityType.values) {
+          if (rng.nextBool()) cmTypes.add(t);
+        }
+
+        final cmConfidence = rng.nextBool()
+            ? Confidence.values[rng.nextInt(Confidence.values.length)]
+            : null;
+
+        final cadenceSps = badOrGoodValues[rng.nextInt(badOrGoodValues.length)];
+        final speedMps = badOrGoodValues[rng.nextInt(badOrGoodValues.length)];
+        final stopPatternScore = stopValues[rng.nextInt(stopValues.length)];
+
+        final w = ActivityWindow(
+          cmTypes: cmTypes,
+          cmConfidence: cmConfidence,
+          cadenceSps: cadenceSps,
+          speedMps: speedMps,
+          stopPatternScore: stopPatternScore,
+        );
+        final r = ActivityClassifier.classify(w);
+        for (final score in r.scores.values) {
+          expect(score.isFinite, isTrue);
+          expect(score, greaterThanOrEqualTo(0.0));
+          expect(score, lessThanOrEqualTo(1.0 + 1e-9));
+        }
+      }
+    });
   });
 }

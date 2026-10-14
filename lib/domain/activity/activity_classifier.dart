@@ -27,21 +27,18 @@ class ActivityClassifier {
         conf = 0.0;
     }
 
-    final cmCycling = w.cmTypes.contains(ActivityType.cycling) ? 1.0 : 0.0;
-    final cmWalking = w.cmTypes.contains(ActivityType.walking) ? 1.0 : 0.0;
-    final cmAutomotive = w.cmTypes.contains(ActivityType.automotive)
-        ? 1.0
-        : 0.0;
-    final cmStationary = w.cmTypes.contains(ActivityType.stationary)
-        ? 1.0
-        : 0.0;
+    final resolvedCm = _resolveCmType(w.cmTypes);
+    final cmCycling = (resolvedCm == ActivityType.cycling) ? 1.0 : 0.0;
+    final cmWalking = (resolvedCm == ActivityType.walking) ? 1.0 : 0.0;
+    final cmAutomotive = (resolvedCm == ActivityType.automotive) ? 1.0 : 0.0;
+    final cmStationary = (resolvedCm == ActivityType.stationary) ? 1.0 : 0.0;
 
     final double sSpeedWalk;
     final double sSpeedCyc;
     final double sSpeedAuto;
     final double stationarySpeedTerm;
 
-    final speed = w.speedMps;
+    final speed = _normalizeSpeed(w.speedMps);
     if (speed == null) {
       sSpeedWalk = 0.0;
       sSpeedCyc = 0.0;
@@ -75,17 +72,18 @@ class ActivityClassifier {
     final double walkingCadenceTerm;
     final double cyclingCadenceTerm;
 
-    final cadence = w.cadenceSps;
+    final cadence = _normalizeCadence(w.cadenceSps);
     if (cadence == null) {
       walkingCadenceTerm = 0.0;
       cyclingCadenceTerm = 0.0;
     } else {
-      final sCad = math.min(1.0, math.max(0.0, cadence) / cfg.cadenceFull);
+      final sCad = math.min(1.0, cadence / cfg.cadenceFull);
       walkingCadenceTerm = cfg.w3 * sCad;
       cyclingCadenceTerm = cfg.w3 * (1.0 - sCad);
     }
 
-    final stop = (w.stopPatternScore ?? 0.0).clamp(0.0, 1.0);
+    final stop = _normalizeStopPattern(w.stopPatternScore);
+    final stopTerm = (stop != null) ? cfg.w5 * stop : 0.0;
 
     final scoreCycling =
         cfg.w1 * cmCycling * conf + cfg.w2 * sSpeedCyc + cyclingCadenceTerm;
@@ -94,7 +92,7 @@ class ActivityClassifier {
         cfg.w1 * cmWalking * conf + cfg.w2 * sSpeedWalk + walkingCadenceTerm;
 
     final scoreAutomotive =
-        cfg.w1 * cmAutomotive * conf + cfg.w2 * sSpeedAuto + cfg.w5 * stop;
+        cfg.w1 * cmAutomotive * conf + cfg.w2 * sSpeedAuto + stopTerm;
 
     final scoreStationary =
         cfg.w1 * cmStationary * conf + cfg.w2 * stationarySpeedTerm;
@@ -126,5 +124,40 @@ class ActivityClassifier {
       bestScore: bestScore,
       margin: margin,
     );
+  }
+
+  static double? _normalizeSpeed(double? speed) {
+    if (speed == null || !speed.isFinite || speed < 0.0) return null;
+    return speed;
+  }
+
+  static double? _normalizeCadence(double? cadence) {
+    if (cadence == null || !cadence.isFinite || cadence < 0.0) return null;
+    return cadence;
+  }
+
+  static double? _normalizeStopPattern(double? stop) {
+    if (stop == null || !stop.isFinite || stop < 0.0 || stop > 1.0) return null;
+    return stop;
+  }
+
+  static ActivityType? _resolveCmType(Set<ActivityType> cmTypes) {
+    if (cmTypes.length == 1) {
+      final single = cmTypes.first;
+      switch (single) {
+        case ActivityType.cycling:
+        case ActivityType.walking:
+        case ActivityType.automotive:
+        case ActivityType.stationary:
+          return single;
+        default:
+          return null;
+      }
+    } else if (cmTypes.length == 2 &&
+        cmTypes.contains(ActivityType.automotive) &&
+        cmTypes.contains(ActivityType.stationary)) {
+      return ActivityType.automotive;
+    }
+    return null;
   }
 }

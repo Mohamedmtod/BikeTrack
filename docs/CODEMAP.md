@@ -25,6 +25,7 @@ lib/domain/trip/segment_type.dart — Trip segment activity type enum
 lib/domain/trip/trip_status.dart — Lifecycle status enum of a recorded trip
 test/helpers/gps_helpers.dart — Shared helper functions and test fixture constants
 test/widget_test.dart — Smoke test for default counter widget
+test/domain/activity/activity_classifier_config_test.dart — Unit tests for ActivityClassifierConfig assert validation
 test/domain/activity/activity_classifier_test.dart — Unit and property tests for ActivityClassifier
 test/domain/activity/activity_type_test.dart — Unit test for ActivityType enum values
 test/domain/activity/classification_source_test.dart — Unit test for ClassificationSource enum values
