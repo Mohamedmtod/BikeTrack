@@ -1,8 +1,3 @@
----
-trigger: glob
-globs: "lib/domain/**, test/domain/**"
-description: "Rules for pure Dart domain logic: state machines, GPS filter, geo, classifier."
----
 # Domain rules
 - Pure Dart only: no `package:flutter`, no `dart:io`, no platform channels, no DateTime.now() inside logic (inject a clock/timestamps).
 - State machines: `(State, Event) -> (State, List<Command>)`. Never execute side effects.

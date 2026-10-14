@@ -27,6 +27,17 @@ Owner and final decision maker: Mohamed (human). Agents execute; they do not mak
 - Run format/analyze/test ONCE at the end (re-run only after a fix).
 - If you must stop before finishing (limit/error/timeout): commit work on the task branch as "WIP: <TASK-ID> <what is done>" and write done/remaining/next in docs/STATUS.md.
 
+## Code organization
+- Organize by feature (geo/, gps/, activity/, trip/), not by type.
+- One reason to change per file. Split when parts change independently; keep together what always changes together. Size is a signal, not a rule: a file over ~250 lines or a function over ~40 lines must justify itself or be split.
+- test/ mirrors lib/. Scenario tests go in test/<feature>/scenarios/. Shared helpers live in test/helpers/ — never duplicated.
+- docs/CODEMAP.md: one line per file. Update it in the same commit when adding, moving, renaming, or deleting a file.
+- Navigation: read CODEMAP.md first, then open only the target files.
+- Review prompts end on the reviewed branch, never on main.
+- No dead code, no commented-out code. Comments explain WHY, not WHAT.
+- Git actions only when the prompt says so: commit, push, and merge happen ONLY as written in the task prompt. Never commit on your own initiative; if you think an extra commit is needed, stop and ask the owner. Exception: a WIP commit when hitting a limit.
+- Merge to main ONLY when the prompt contains "OWNER-APPROVED MERGE: <branch>". Then squash-merge that branch only; the full test suite must pass before push, otherwise reset to origin/main and stop.
+
 ## Owner vs agent responsibilities
 Agents do: code, tests, docs/STATUS.md and docs/TASKS.md updates, commits on task branches, pushing task branches, opening the final report.
 Owner only: merging to main, approving decisions, anything involving accounts/payments/signing, running the app on the iPhone.

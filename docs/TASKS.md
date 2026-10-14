@@ -54,7 +54,7 @@ Allowed files: none unless approved
 
 ### T-005 — GpsFilter §7.2
 Owner: Antigravity
-Status: review
+Status: done
 Branch: task/T-005-gps-filter
 Plan refs: §7.2, §6.4
 Goal: Implement pure-Dart GPS filter with two-reference design (C3/D-010); full unit tests.
@@ -62,4 +62,15 @@ Allowed files: lib/domain/**, test/domain/**
 Tests required: one per RejectReason + 5 golden scenarios + 1 property test + T-006R tests A-I.
 Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (32 tests).
 Notes: T-005R2 applies D-020 split-baseline (lastRawTsMs + lastTrusted + anchorClearedConservatively). 32 tests green.
-Reviewer: Owner (merge decision)
+Reviewer: Owner (merged to main)
+
+### T-007 — Code tree refactor
+Owner: Antigravity
+Status: review
+Branch: task/T-007-code-tree
+Goal: Pure move refactor into feature tree (geo/, gps/, activity/, trip/, shared/), CODEMAP, and code rules.
+Allowed files: lib/**, test/**, docs/**, AGENTS.md, .agents/**
+Tests required: full suite passes with identical assertions (51 tests, 110 expect calls).
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (51 tests), CODEMAP.md created, no file > 250 lines except gps_filter.dart.
+Reviewer: Owner
+
