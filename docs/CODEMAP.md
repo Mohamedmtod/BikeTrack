@@ -60,7 +60,8 @@ test/domain/shared/event_source_test.dart — Unit test for EventSource enum val
 test/domain/shared/recording_state_test.dart — Unit test for RecordingState enum values
 test/domain/trip/distance_status_test.dart — Unit test for DistanceStatus enum values
 test/domain/trip/scenarios/active_paused_test.dart — Scenario tests 9–17, 20 for active and paused TripStateMachine transitions
+test/domain/trip/scenarios/d027_regression_test.dart — Regression tests 23–26 for D-027 stale-evidence clearing and monotonic timestamp clamping
 test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for idle and pending TripStateMachine transitions
-test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22 (500-event property test)
+test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22, 27 (property tests)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values
 test/domain/trip/trip_status_test.dart — Unit test for TripStatus enum values

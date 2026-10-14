@@ -7,10 +7,10 @@ import '../trip_state.dart';
 import '../trip_status.dart';
 import '../trip_step_result.dart';
 
-/// Transitions for idle (status == null) and completed status (§6.2, D-026).
+/// Transitions for idle (status == null) and completed status (§6.2, D-026, D-027).
 ///
-/// UserStart opens a fresh cycling trip.
-/// NfcScan enters pending.
+/// UserStart opens a fresh cycling trip; clears stale activity (D-027).
+/// NfcScan enters pending; clears stale activity (D-027).
 /// All other events are no-ops.
 TripStepResult idleOrCompletedStep(
   TripState s,
@@ -24,8 +24,7 @@ TripStepResult idleOrCompletedStep(
         tripStartMs: event.nowMs,
         segmentType: SegmentType.cycling,
         segmentStartMs: event.nowMs,
-        lastActivityType: s.lastActivityType,
-        lastActivitySinceMs: s.lastActivitySinceMs,
+        // lastActivityType/lastActivitySinceMs cleared — D-027(1)
         lastEventMs: s.lastEventMs,
       ),
       [StartGps(GpsMode.high), OpenSegment(SegmentType.cycling, event.nowMs)],
@@ -36,8 +35,7 @@ TripStepResult idleOrCompletedStep(
       TripState(
         status: TripStatus.pending,
         pendingSinceMs: event.nowMs,
-        lastActivityType: s.lastActivityType,
-        lastActivitySinceMs: s.lastActivitySinceMs,
+        // lastActivityType/lastActivitySinceMs cleared — D-027(1)
         lastEventMs: s.lastEventMs,
       ),
       [StartGps(GpsMode.lowPower)],

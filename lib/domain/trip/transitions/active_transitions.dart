@@ -18,12 +18,12 @@ SegmentType? _toSegmentType(ActivityType type) => switch (type) {
   _ => null,
 };
 
-/// Transitions for active status (§6.2, D-026).
+/// Transitions for active status (§6.2, D-026, D-027).
 ///
 /// UserStop -> completed.
 /// UserStart / NfcScan -> AskOpenTripDecision (trip already open).
-/// Stationary >= pauseMs -> paused.
-/// Moving activity != current segment >= modeChangeMs -> segment switch.
+/// Stationary >= pauseMs (elapsed from clamped pauseStart) -> paused.
+/// Moving activity != current segment >= modeChangeMs (elapsed from clamped switchAt) -> segment switch.
 TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
   if (event is UserStop) {
     return TripStepResult(
@@ -44,16 +44,17 @@ TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
   final lat = s.lastActivityType;
   final lasSince = s.lastActivitySinceMs;
 
-  // Stationary -> paused after pauseMs.
+  // Stationary -> paused after pauseMs (D-027: clamp to segmentStartMs ?? tripStartMs).
   if (lat == ActivityType.stationary && lasSince != null) {
-    if (event.nowMs - lasSince >= config.pauseMs) {
+    final pauseStart = max(lasSince, s.segmentStartMs ?? s.tripStartMs!);
+    if (event.nowMs - pauseStart >= config.pauseMs) {
       return TripStepResult(
         TripState(
           status: TripStatus.paused,
           tripStartMs: s.tripStartMs,
           segmentType: s.segmentType,
           segmentStartMs: s.segmentStartMs,
-          pausedSinceMs: lasSince,
+          pausedSinceMs: pauseStart,
           lastActivityType: s.lastActivityType,
           lastActivitySinceMs: lasSince,
           lastEventMs: s.lastEventMs,
@@ -64,28 +65,27 @@ TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
     return TripStepResult(s, const <TripCommand>[]);
   }
 
-  // Moving activity -> mode change after modeChangeMs.
+  // Moving activity -> mode change after modeChangeMs (D-027: clamp switchAt).
   if (lat != null && lasSince != null) {
     final seg = _toSegmentType(lat);
     if (seg != null && seg != s.segmentType) {
-      if (event.nowMs - lasSince >= config.modeChangeMs) {
-        // Clamp start to tripStartMs so OpenSegment.startMs >= tripStartMs.
-        final segStart = max(lasSince, s.tripStartMs!);
+      final switchAt = max(lasSince, s.segmentStartMs ?? s.tripStartMs!);
+      if (event.nowMs - switchAt >= config.modeChangeMs) {
         return TripStepResult(
           TripState(
             status: TripStatus.active,
             tripStartMs: s.tripStartMs,
             segmentType: seg,
-            segmentStartMs: segStart,
+            segmentStartMs: switchAt,
             lastActivityType: s.lastActivityType,
             lastActivitySinceMs: lasSince,
             lastEventMs: s.lastEventMs,
           ),
           [
-            CloseSegment(segStart),
+            CloseSegment(switchAt),
             OpenSegment(
               seg,
-              segStart,
+              switchAt,
               needsReview: seg == SegmentType.automotive,
             ),
           ],
