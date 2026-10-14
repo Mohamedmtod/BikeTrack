@@ -1,10 +1,16 @@
 export 'activity/activity_classifier.dart';
 export 'activity/activity_classifier_config.dart';
+export 'activity/activity_state.dart';
+export 'activity/activity_state_config.dart';
+export 'activity/activity_state_machine.dart';
+export 'activity/activity_state_result.dart';
 export 'activity/activity_type.dart';
 export 'activity/activity_window.dart';
 export 'activity/classification_result.dart';
 export 'activity/classification_source.dart';
 export 'activity/membership.dart';
+export 'config/domain_config.dart';
+export 'config/trip_config.dart';
 export 'geo/geo_point.dart';
 export 'geo/haversine.dart';
 export 'gps/filter_result.dart';

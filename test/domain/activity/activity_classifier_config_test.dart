@@ -20,5 +20,12 @@ void main() {
     test('default const config does not throw', () {
       expect(() => const ActivityClassifierConfig(), returnsNormally);
     });
+
+    test('ActivityClassifierConfig(w1: 0.1, w2: 0.2, w3: 0.7, w5: 0.1) does not throw', () {
+      expect(
+        () => ActivityClassifierConfig(w1: 0.1, w2: 0.2, w3: 0.7, w5: 0.1),
+        returnsNormally,
+      );
+    });
   });
 }
