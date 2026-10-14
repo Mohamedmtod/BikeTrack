@@ -65,3 +65,6 @@ test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for i
 test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22, 27 (property tests)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values
 test/domain/trip/trip_status_test.dart — Unit test for TripStatus enum values
+probes/ios_autostart/lib/main.dart — Minimal Flutter UI shell for T-012 iOS autostart feasibility probe
+probes/ios_autostart/test/widget_test.dart — Smoke test for T-012 probe shell UI
+
