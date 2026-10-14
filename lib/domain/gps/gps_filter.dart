@@ -4,7 +4,6 @@
 /// are injected as [int] milliseconds-since-epoch.
 library;
 
-import '../geo/geo_point.dart';
 import '../geo/haversine.dart';
 import 'filter_result.dart';
 import 'filter_state.dart';

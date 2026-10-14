@@ -4,9 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../helpers/gps_helpers.dart';
 
 const _origin = origin;
-const _cfg = defaultCfg;
 const _offset = offset;
-const _sample = sample;
 
 void main() {
   group('A — Regression: exact Codex sequence produces 0 phantom distance', () {
