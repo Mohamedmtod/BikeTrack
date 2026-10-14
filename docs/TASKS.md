@@ -87,14 +87,37 @@ Reviewer: Owner (merged to main)
 
 ### T-009 — ActivityStateMachine & DomainConfig
 Owner: Antigravity
-Status: review
-Branch: task/T-009-activity-state
+Status: done
+Branch: task/T-009-activity-state (merged to main)
 Plan refs: §6.1, §6.4, D-024, D-025
 Goal: Pure-Dart ActivityStateMachine debouncing with candidate hysteresis and maxEvidenceGapMs; DomainConfig aggregating all 4 domain configs.
 Allowed files: lib/domain/activity/**, lib/domain/config/**, lib/domain/domain.dart, test/domain/activity/**, test/domain/config/**, docs/**
 Tests required: 11 ActivityStateMachine scenario tests, 1 config assert test, 2 DomainConfig/TripConfig tests.
-Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (96 tests).
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (97 tests).
 Reviewer: Owner / Codex
 
+### T-010 — TripStateMachine phase 1 §6.2
+Owner: Antigravity
+Status: done
+Branch: task/T-010-trip-state-machine (merged to main)
+Plan refs: §6.2, D-026, D-027
+Goal: Pure-Dart TripStateMachine step(TripState, TripEvent, TripConfig) -> TripStepResult with sealed events and commands; 22 scenario/property tests.
+Allowed files: lib/domain/trip/**, lib/domain/domain.dart, test/domain/trip/scenarios/**, docs/**
+Tests required: 22 tests (idle/pending 1-8, active/paused 9-17+20, property 18-19+21-22).
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (124 tests).
+Reviewer: Owner (merged to main)
 
+### T-011 — TripStateMachine phase 2 (M4)
+Owner: TBD
+Status: todo
+Branch: task/T-011-trip-state-phase2
+Plan refs: §6.2, D-026
+Goal: Implement deferred statuses: suspectedForgotten, autoClosed, needsReview; auto-detect start from idle; GPS gap segments; reconcile logic.
+Allowed files: lib/domain/trip/**, test/domain/trip/**, docs/**
+Tests required: TBD (full coverage of new statuses).
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes.
+Notes:
+- mode switch after resume may fall inside the pause interval; clamp switchAt to max(..., resumeMs)
+- golden pipeline scenarios (13.3) move to M2 with the replay harness
+Reviewer: TBD
 

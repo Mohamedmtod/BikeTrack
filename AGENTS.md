@@ -26,6 +26,7 @@ Owner and final decision maker: Mohamed (human). Agents execute; they do not mak
 - Never weaken, delete, or change expected values of a required test to make it pass. If a required test seems wrong, stop and report it as an open question.
 - Run format/analyze/test ONCE at the end (re-run only after a fix).
 - If you must stop before finishing (limit/error/timeout): commit work on the task branch as "WIP: <TASK-ID> <what is done>" and write done/remaining/next in docs/STATUS.md.
+- Never write a rating row for yourself in AGENT_LOG; rows are provided in the prompt.
 
 ## Code organization
 - Organize by feature (geo/, gps/, activity/, trip/), not by type.
