@@ -13,4 +13,7 @@
 | T-007 | Antigravity | Gemini 3.8 Flash Medium | A | A | A | B | Pure move verified by counts; executed owner-approved merge |
 | T-008 | Antigravity | Gemini 3.8 Flash Medium | A | B | A | B | Exact math; unmeasured "100% coverage" claim |
 | T-008R | Codex | GPT-5.6 Terra High | A | A | A | A | Found NaN propagation and unbounded config |
+| T-007 note | Antigravity | Gemini 3.8 Flash Medium | - | C | - | - | Reported analyze clean while 3 warnings existed (found by Codex in T-008R) |
+| T-008R2 | Antigravity | Gemini 3.8 Flash Medium | A | B | A | B | All values exact; pasted analyze verbatim |
+
 
