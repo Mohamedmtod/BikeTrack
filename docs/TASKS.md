@@ -98,14 +98,14 @@ Reviewer: Owner / Codex
 
 ### T-010 — TripStateMachine phase 1 §6.2
 Owner: Antigravity
-Status: review
-Branch: task/T-010-trip-state-machine
-Plan refs: §6.2, D-026
+Status: done
+Branch: task/T-010-trip-state-machine (merged to main)
+Plan refs: §6.2, D-026, D-027
 Goal: Pure-Dart TripStateMachine step(TripState, TripEvent, TripConfig) -> TripStepResult with sealed events and commands; 22 scenario/property tests.
 Allowed files: lib/domain/trip/**, lib/domain/domain.dart, test/domain/trip/scenarios/**, docs/**
 Tests required: 22 tests (idle/pending 1-8, active/paused 9-17+20, property 18-19+21-22).
-Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (119 tests).
-Reviewer: Owner / Codex
+Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes (124 tests).
+Reviewer: Owner (merged to main)
 
 ### T-011 — TripStateMachine phase 2 (M4)
 Owner: TBD
@@ -116,4 +116,8 @@ Goal: Implement deferred statuses: suspectedForgotten, autoClosed, needsReview; 
 Allowed files: lib/domain/trip/**, test/domain/trip/**, docs/**
 Tests required: TBD (full coverage of new statuses).
 Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes.
+Notes:
+- mode switch after resume may fall inside the pause interval; clamp switchAt to max(..., resumeMs)
+- golden pipeline scenarios (13.3) move to M2 with the replay harness
 Reviewer: TBD
+
