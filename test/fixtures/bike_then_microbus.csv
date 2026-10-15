@@ -1,0 +1,7 @@
+timestamp_ms,latitude_deg,longitude_deg,h_accuracy_m,is_stationary,activity_type,confidence,cadence_sps,speed_mps,stop_pattern_score
+0,30.000000,31.000000,5,false,cycling,high,0,5.0,
+5000,30.000225,31.000000,5,false,cycling,high,0,5.0,
+10000,30.000450,31.000000,5,false,cycling,high,0,5.0,
+15000,30.000900,31.000000,5,false,automotive,high,,10.0,0.5
+20000,30.001350,31.000000,5,false,automotive,high,,10.0,0.5
+25000,30.001800,31.000000,5,false,automotive,high,,10.0,0.5

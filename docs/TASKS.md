@@ -121,3 +121,50 @@ Notes:
 - golden pipeline scenarios (13.3) move to M2 with the replay harness
 Reviewer: TBD
 
+---
+
+### T-014 — Windows domain replay harness
+Owner: Claude Code CLI
+Status: done
+Notes: Must not run in parallel with T-013 because both update shared documentation.
+Branch: `task/T-014-windows-replay-harness`
+Plan refs: §13.2, §13.3
+
+Goal: Add a test-only Windows replay harness under `test/replay/` that reads CSV fixtures from `test/fixtures/` and exercises existing public pure-Dart domain APIs. Use real-trip CSV replays for regression coverage and the §13.3 synthetic CSV golden scenarios.
+
+Allowed files: `test/replay/**`, `test/fixtures/**`, `test/helpers/**` (only if a shared replay helper is necessary), `docs/TASKS.md`, `docs/STATUS.md`, `docs/CODEMAP.md`
+
+Forbidden scope: `lib/domain/**`, `ios/**`, `lib/bridge/**`, persistence, production pipeline/coordinator code, Pigeon/bridge design, dependencies, and all files outside Allowed files. Do not add JSONL fixtures.
+
+Steps:
+1. Define a CSV fixture format within the test harness sufficient to replay supported existing public domain inputs, with parsing contained entirely under `test/replay/`.
+2. Add CSV fixtures named by §13.3: `stationary_drift_30min.csv`, `traffic_light_stops.csv`, `bike_then_walk.csv`, `bike_then_microbus.csv`, and `gps_tunnel_gap.csv`.
+3. Implement replay tests that feed fixture rows only through existing public pure-Dart domain APIs and assert observable golden outcomes.
+4. Add at least one real-trip CSV replay fixture pattern so every future field bug can be captured as a regression fixture.
+5. If a required golden assertion cannot be expressed through an existing public API, stop and report the exact missing public API as a blocker; do not design or add production APIs.
+6. Update `docs/CODEMAP.md`, `docs/STATUS.md`, and this task’s status when the work is complete.
+
+Tests required:
+- Replay every §13.3 CSV fixture on Windows through existing public pure-Dart domain APIs.
+- Assert `stationary_drift_30min.csv` produces zero distance.
+- Assert the remaining fixture outcomes only where existing public APIs expose enough observable state or commands to make the golden assertion.
+- Run `dart format .`, `flutter analyze`, and `flutter test` once at the end.
+
+Acceptance criteria:
+- All replay harness code is test-only under `test/replay/`; all fixtures are CSV under `test/fixtures/`.
+- No production, bridge, iOS, persistence, or coordinator code changes.
+- No new dependencies.
+- The harness exercises public pure-Dart domain APIs only.
+- Every §13.3 synthetic scenario has a CSV fixture and replay test.
+- Any unsupported golden assertion is reported as an exact missing public API blocker, without production-code design or changes.
+- `docs/CODEMAP.md` and `docs/STATUS.md` are updated.
+- Formatting, analysis, and test results are reported exactly as run; no result is claimed without execution.
+
+Reviewer: Antigravity
+
+Codemagic requirement: Not required for this isolated Windows-only test task because it changes neither Swift nor iOS build inputs; the owner should run the unsigned Codemagic build at the end of the relevant larger M2 phase.
+
+Open questions:
+- Which required outcomes for `traffic_light_stops.csv`, `bike_then_walk.csv`, `bike_then_microbus.csv`, and `gps_tunnel_gap.csv` are observable through the current public domain APIs without inspecting or extending production code?
+- If any is not observable, what exact existing public API is missing for that assertion?
+
