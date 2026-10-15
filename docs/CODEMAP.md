@@ -65,6 +65,16 @@ test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for i
 test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22, 27 (property tests)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values
 test/domain/trip/trip_status_test.dart — Unit test for TripStatus enum values
-probes/ios_autostart/lib/main.dart — Minimal Flutter UI shell for T-012 iOS autostart feasibility probe
-probes/ios_autostart/test/widget_test.dart — Smoke test for T-012 probe shell UI
+probes/ios_autostart/lib/main.dart — T-012 diagnostic UI backed by the native probe method channel
+probes/ios_autostart/ios/Runner/AppDelegate.swift — App-level native probe launch, lifecycle, and URL handling
+probes/ios_autostart/ios/Runner/SceneDelegate.swift — Scene URL delivery and Flutter diagnostic channel adapter
+probes/ios_autostart/ios/Runner/Probe/ProbeLog.swift — Durable, append-only JSONL probe log singleton
+probes/ios_autostart/ios/Runner/Probe/RideRecorder.swift — App-level Core Location recorder singleton
+probes/ios_autostart/ios/Runner/Probe/StartGate.swift — Correlated accepted-fix start gate singleton
+probes/ios_autostart/ios/Runner/Probe/NotificationPermission.swift — Local-notification permission and scheduling singleton
+probes/ios_autostart/ios/Runner/Probe/StartRideIntents.swift — Foreground/background App Intents and App Shortcuts provider
+probes/ios_autostart/tool/analyze_log.dart — Dependency-free JSONL probe evidence analyzer
+probes/ios_autostart/test/widget_test.dart — Method-channel-backed diagnostic UI widget test
+probes/ios_autostart/test/analyze_log_test.dart — Fixture-driven JSONL analyzer test
+probes/ios_autostart/test/fixtures/probe_log.jsonl — Mixed valid/malformed probe evidence fixture
 

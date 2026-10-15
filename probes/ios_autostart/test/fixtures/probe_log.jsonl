@@ -1,0 +1,10 @@
+{"seq":1,"wall_ms":1000,"uptime_ms":100,"event":"intent_invoked","payload":{"variant":"background","attempt_id":"attempt-1"}}
+{"seq":2,"wall_ms":1050,"uptime_ms":150,"event":"url_received","payload":{"attempt_id":"attempt-1","url":"biketrack://start-ride"}}
+{"seq":3,"wall_ms":1100,"uptime_ms":200,"event":"start_requested","payload":{"ride_id":"ride-1","attempt_id":"attempt-1","trigger":"intent_background"}}
+{"seq":3,"wall_ms":1200,"uptime_ms":300,"event":"fix","payload":{"ride_id":"ride-1","fix_ts_ms":1150,"recv_ms":1190,"accepted":false,"reject_reason":"accuracy_over_50m"}}
+{"seq":4,"wall_ms":2100,"uptime_ms":1200,"event":"fix","payload":{"ride_id":"ride-1","fix_ts_ms":2000,"recv_ms":2050,"accepted":true,"reject_reason":""}}
+{"seq":5,"wall_ms":2200,"uptime_ms":1300,"event":"notify_success","payload":{"ride_id":"ride-1","attempt_id":"attempt-1"}}
+{"seq":6,"wall_ms":3300,"uptime_ms":2400,"event":"fix","payload":{"ride_id":"ride-1","fix_ts_ms":33050,"recv_ms":33100,"accepted":true,"reject_reason":""}}
+{"seq":7,"wall_ms":3400,"uptime_ms":2500,"event":"recovery_attempt","payload":{"ride_id":"ride-1"}}
+{"seq":8,"wall_ms":3500,"uptime_ms":2600,"event":"notify_success","payload":{"ride_id":"ride-unknown","attempt_id":"attempt-1"}}
+not-json

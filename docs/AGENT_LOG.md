@@ -18,5 +18,6 @@
 | T-010 | Antigravity | Claude Sonnet 4.6 Thinking | A | B | B | B | Spec implemented exactly; stopped correctly at idle gap; incomplete report; self-rated |
 | T-010R | Codex | GPT-5.6 Terra Extra High | A | A | A | A | Found stale-evidence and timeline majors |
 | T-012A | Antigravity / Gemini 3.8 Flash (Medium) | Probe shell + Codemagic IPA pipeline | pending owner review |
+| T-012B | Claude Code CLI / Claude Sonnet 5 | Native probe recorder + intents + analyzer | pending Codemagic build + Codex review |
 
 
