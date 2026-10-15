@@ -40,6 +40,14 @@ lib/domain/trip/transitions/idle_transitions.dart — Idle and completed status 
 lib/domain/trip/transitions/paused_transitions.dart — Paused status transition rules (resume, stop, open-trip guard)
 lib/domain/trip/transitions/pending_transitions.dart — Pending status transition rules (cycling detect, timeout)
 test/helpers/gps_helpers.dart — Shared helper functions and test fixture constants
+test/fixtures/stationary_drift_30min.csv — Stationary GPS drift replay fixture spanning 30 minutes
+test/fixtures/traffic_light_stops.csv — Cycling replay fixture with five 60-second stationary stops
+test/fixtures/bike_then_walk.csv — Cycling-to-walking replay fixture
+test/fixtures/bike_then_microbus.csv — Cycling-to-automotive replay fixture
+test/fixtures/gps_tunnel_gap.csv — GPS gap replay fixture
+test/fixtures/real_trip_regression_template.csv — Template-format real-trip regression replay fixture
+test/replay/replay_harness.dart — Test-only CSV parser and public-domain input adapters
+test/replay/domain_replay_test.dart — CSV replay tests for GPS and activity golden scenarios
 test/widget_test.dart — Smoke test for default counter widget
 test/domain/activity/activity_classifier_config_test.dart — Unit tests for ActivityClassifierConfig assert validation
 test/domain/activity/activity_classifier_test.dart — Unit and property tests for ActivityClassifier

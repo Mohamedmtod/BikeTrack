@@ -1,0 +1,4 @@
+timestamp_ms,latitude_deg,longitude_deg,h_accuracy_m,is_stationary,activity_type,confidence,cadence_sps,speed_mps,stop_pattern_score
+0,30.000000,31.000000,5,false,cycling,high,0,5.0,
+5000,30.000100,31.000000,5,false,cycling,high,0,5.0,
+10000,30.000200,31.000000,5,false,cycling,high,0,5.0,
