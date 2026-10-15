@@ -4,6 +4,7 @@ import 'package:biketrack/domain/activity/activity_state.dart';
 import 'package:biketrack/domain/activity/activity_type.dart';
 import 'package:biketrack/domain/config/trip_config.dart';
 import 'package:biketrack/domain/trip/gps_mode.dart';
+import 'package:biketrack/domain/trip/segment_type.dart';
 import 'package:biketrack/domain/trip/trip_command.dart';
 import 'package:biketrack/domain/trip/trip_event.dart';
 import 'package:biketrack/domain/trip/trip_state.dart';
@@ -40,7 +41,7 @@ void main() {
       },
     );
 
-    test('21: idle+Activity(cycling) -> idle, no commands', () {
+    test('21: idle+Activity(cycling) -> active at historical activity start', () {
       final result = TripStateMachine.step(
         TripState.idle(),
         ActivityChanged(
@@ -49,12 +50,16 @@ void main() {
         ),
         cfg,
       );
-      expect(result.state.isIdle, isTrue);
-      expect(result.commands, isEmpty);
+      expect(result.state.status, TripStatus.active);
+      expect(result.state.tripStartMs, 0);
+      expect(result.commands, [
+        StartGps(GpsMode.high),
+        OpenSegment(SegmentType.cycling, 0),
+      ]);
     });
 
     test('22: property: 500 random non-decreasing events never throw; '
-        'status in {null,pending,active,paused,completed}; '
+        'status in {null,pending,active,paused,suspectedForgotten,needsReview,completed}; '
         'OpenSegment.startMs >= tripStartMs', () {
       final rng = Random(7);
       var state = TripState.idle();
@@ -93,6 +98,8 @@ void main() {
             equals(TripStatus.pending),
             equals(TripStatus.active),
             equals(TripStatus.paused),
+            equals(TripStatus.suspectedForgotten),
+            equals(TripStatus.needsReview),
             equals(TripStatus.completed),
           ),
         );

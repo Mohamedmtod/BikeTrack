@@ -30,6 +30,28 @@ final class ActivityChanged extends TripEvent {
   const ActivityChanged(super.nowMs, this.activity);
 }
 
+/// GPS recording gap detected after the last trusted GPS timestamp.
+final class GpsGapDetected extends TripEvent {
+  final int detectedAtMs;
+  final int lastTrustedGpsMs;
+
+  const GpsGapDetected(this.detectedAtMs, this.lastTrustedGpsMs)
+    : super(detectedAtMs);
+}
+
+/// Activity and GPS history became available after a recording interruption.
+final class RecoveryDetected extends TripEvent {
+  final int detectedAtMs;
+  final int lastTrustedGpsMs;
+  final int? lastKnownMovementMs;
+
+  const RecoveryDetected(
+    this.detectedAtMs,
+    this.lastTrustedGpsMs, [
+    this.lastKnownMovementMs,
+  ]) : super(detectedAtMs);
+}
+
 /// Periodic clock tick for timeout checks.
 final class Tick extends TripEvent {
   const Tick(super.nowMs);

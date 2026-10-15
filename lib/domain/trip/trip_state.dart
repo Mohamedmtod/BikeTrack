@@ -1,5 +1,6 @@
 import '../activity/activity_type.dart';
 import 'segment_type.dart';
+import 'trip_close_reason.dart';
 import 'trip_status.dart';
 
 // Sentinel used by copyWith to mean "keep the current field value".
@@ -14,10 +15,13 @@ class TripState {
   final int? tripStartMs;
   final int? pendingSinceMs;
   final int? pausedSinceMs;
+  final int? suspectedSinceMs;
   final SegmentType? segmentType;
   final int? segmentStartMs;
   final ActivityType? lastActivityType;
   final int? lastActivitySinceMs;
+  final int? lastKnownMovementMs;
+  final TripCloseReason? closeReason;
   final int? lastEventMs;
 
   const TripState({
@@ -25,10 +29,13 @@ class TripState {
     this.tripStartMs,
     this.pendingSinceMs,
     this.pausedSinceMs,
+    this.suspectedSinceMs,
     this.segmentType,
     this.segmentStartMs,
     this.lastActivityType,
     this.lastActivitySinceMs,
+    this.lastKnownMovementMs,
+    this.closeReason,
     this.lastEventMs,
   });
 
@@ -38,10 +45,13 @@ class TripState {
       tripStartMs = null,
       pendingSinceMs = null,
       pausedSinceMs = null,
+      suspectedSinceMs = null,
       segmentType = null,
       segmentStartMs = null,
       lastActivityType = null,
       lastActivitySinceMs = null,
+      lastKnownMovementMs = null,
+      closeReason = null,
       lastEventMs = null;
 
   /// True when there is no open trip (status == null).
@@ -56,10 +66,13 @@ class TripState {
     Object? tripStartMs = _keep,
     Object? pendingSinceMs = _keep,
     Object? pausedSinceMs = _keep,
+    Object? suspectedSinceMs = _keep,
     Object? segmentType = _keep,
     Object? segmentStartMs = _keep,
     Object? lastActivityType = _keep,
     Object? lastActivitySinceMs = _keep,
+    Object? lastKnownMovementMs = _keep,
+    Object? closeReason = _keep,
     Object? lastEventMs = _keep,
   }) {
     return TripState(
@@ -73,6 +86,9 @@ class TripState {
       pausedSinceMs: pausedSinceMs == _keep
           ? this.pausedSinceMs
           : pausedSinceMs as int?,
+      suspectedSinceMs: suspectedSinceMs == _keep
+          ? this.suspectedSinceMs
+          : suspectedSinceMs as int?,
       segmentType: segmentType == _keep
           ? this.segmentType
           : segmentType as SegmentType?,
@@ -85,6 +101,12 @@ class TripState {
       lastActivitySinceMs: lastActivitySinceMs == _keep
           ? this.lastActivitySinceMs
           : lastActivitySinceMs as int?,
+      lastKnownMovementMs: lastKnownMovementMs == _keep
+          ? this.lastKnownMovementMs
+          : lastKnownMovementMs as int?,
+      closeReason: closeReason == _keep
+          ? this.closeReason
+          : closeReason as TripCloseReason?,
       lastEventMs: lastEventMs == _keep
           ? this.lastEventMs
           : lastEventMs as int?,
@@ -100,10 +122,13 @@ class TripState {
           tripStartMs == other.tripStartMs &&
           pendingSinceMs == other.pendingSinceMs &&
           pausedSinceMs == other.pausedSinceMs &&
+          suspectedSinceMs == other.suspectedSinceMs &&
           segmentType == other.segmentType &&
           segmentStartMs == other.segmentStartMs &&
           lastActivityType == other.lastActivityType &&
           lastActivitySinceMs == other.lastActivitySinceMs &&
+          lastKnownMovementMs == other.lastKnownMovementMs &&
+          closeReason == other.closeReason &&
           lastEventMs == other.lastEventMs;
 
   @override
@@ -112,10 +137,13 @@ class TripState {
     tripStartMs,
     pendingSinceMs,
     pausedSinceMs,
+    suspectedSinceMs,
     segmentType,
     segmentStartMs,
     lastActivityType,
     lastActivitySinceMs,
+    lastKnownMovementMs,
+    closeReason,
     lastEventMs,
   );
 
@@ -126,9 +154,12 @@ class TripState {
       'tripStartMs: $tripStartMs, '
       'pendingSinceMs: $pendingSinceMs, '
       'pausedSinceMs: $pausedSinceMs, '
+      'suspectedSinceMs: $suspectedSinceMs, '
       'segmentType: $segmentType, '
       'segmentStartMs: $segmentStartMs, '
       'lastActivityType: $lastActivityType, '
       'lastActivitySinceMs: $lastActivitySinceMs, '
+      'lastKnownMovementMs: $lastKnownMovementMs, '
+      'closeReason: $closeReason, '
       'lastEventMs: $lastEventMs)';
 }

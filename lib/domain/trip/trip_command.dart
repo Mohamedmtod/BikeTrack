@@ -33,6 +33,17 @@ final class StopGps extends TripCommand {
   int get hashCode => runtimeType.hashCode;
 }
 
+/// Clear the distance anchor so distance cannot cross a recording gap.
+final class ResetGpsAnchor extends TripCommand {
+  const ResetGpsAnchor();
+
+  @override
+  bool operator ==(Object other) => other is ResetGpsAnchor;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
 /// Open a new trip segment.
 final class OpenSegment extends TripCommand {
   final SegmentType type;

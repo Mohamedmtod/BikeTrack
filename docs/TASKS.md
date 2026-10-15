@@ -108,18 +108,26 @@ Acceptance criteria: dart format clean, flutter analyze no issues, flutter test 
 Reviewer: Owner (merged to main)
 
 ### T-011 — TripStateMachine phase 2 (M4)
-Owner: TBD
-Status: todo
+Owner: Claude Code
+Status: in-progress
 Branch: task/T-011-trip-state-phase2
-Plan refs: §6.2, D-026
-Goal: Implement deferred statuses: suspectedForgotten, autoClosed, needsReview; auto-detect start from idle; GPS gap segments; reconcile logic.
-Allowed files: lib/domain/trip/**, test/domain/trip/**, docs/**
-Tests required: TBD (full coverage of new statuses).
-Acceptance criteria: dart format clean, flutter analyze no issues, flutter test passes.
-Notes:
-- mode switch after resume may fall inside the pause interval; clamp switchAt to max(..., resumeMs)
-- golden pipeline scenarios (13.3) move to M2 with the replay harness
-Reviewer: TBD
+Plan refs: §6.2, §6.4, §7.2, §7.5, §7.7, D-026, D-027, D-030
+Goal: Implement D-030 pure-Dart phase-2 trip lifecycle behavior: safe GPS-gap/recovery closure, idle cycling auto-start, forgotten-trip review closure, and close reasons.
+Allowed files:
+- lib/domain/trip/**
+- lib/domain/config/trip_config.dart
+- lib/domain/domain.dart
+- test/domain/trip/**
+- test/domain/config/**
+- docs/DECISIONS.md
+- docs/TASKS.md
+- docs/STATUS.md
+- docs/CODEMAP.md
+Forbidden: everything else.
+Steps: Extend the trip event/command/state/status contracts and transitions only as D-030 requires; preserve phase-1 behavior except where D-030 supersedes it; update public exports and CODEMAP for every added, moved, or deleted file.
+Tests required: cycling-only idle auto-start at historical activity time; duplicate/stale auto-start safety; safe gap timestamp clamping plus anchor reset and no bridged segment; paused-to-forgotten/resume and conservative auto-close; recovery timestamp distinction, terminal no-open-segment safety, and duplicate/stale safety; user-stop close reason; monotonic timestamp and no-duplicate-terminal-command properties.
+Acceptance criteria: pure Dart with no dependencies or GPS implementation changes; all derived timestamps clamped and monotonic; gaps use SegmentType.gap; auto-close and recovery end as needsReview with the required close reason and terminal commands; dart format clean, flutter analyze no new issues, flutter test passes.
+Reviewer: Owner
 
 ---
 

@@ -1,8 +1,13 @@
+import 'dart:math' as math;
+
+import '../activity/activity_type.dart';
 import '../config/trip_config.dart';
 import 'transitions/active_transitions.dart';
 import 'transitions/idle_transitions.dart';
 import 'transitions/paused_transitions.dart';
 import 'transitions/pending_transitions.dart';
+import 'transitions/recovery_transitions.dart';
+import 'transitions/suspected_forgotten_transitions.dart';
 import 'trip_command.dart';
 import 'trip_event.dart';
 import 'trip_state.dart';
@@ -32,10 +37,22 @@ class TripStateMachine {
         lastActivityType: event.activity.type,
         lastActivitySinceMs: event.activity.sinceMs,
       );
+      if (_isMoving(event.activity.type) && s.tripStartMs != null) {
+        s = s.copyWith(
+          lastKnownMovementMs: math.max(s.tripStartMs!, event.nowMs),
+        );
+      }
+    }
+
+    final gapOrRecovery = gapOrRecoveryStep(s, event);
+    if (gapOrRecovery != null) {
+      return gapOrRecovery;
     }
 
     // Dispatch by status.
-    if (s.isIdle || s.status == TripStatus.completed) {
+    if (s.isIdle ||
+        s.status == TripStatus.completed ||
+        s.status == TripStatus.needsReview) {
       return idleOrCompletedStep(s, event, config);
     }
     if (s.status == TripStatus.pending) {
@@ -47,6 +64,14 @@ class TripStateMachine {
     if (s.status == TripStatus.paused) {
       return pausedStep(s, event, config);
     }
+    if (s.status == TripStatus.suspectedForgotten) {
+      return suspectedForgottenStep(s, event, config);
+    }
     return TripStepResult(s, const <TripCommand>[]);
   }
+
+  static bool _isMoving(ActivityType type) =>
+      type == ActivityType.cycling ||
+      type == ActivityType.walking ||
+      type == ActivityType.automotive;
 }

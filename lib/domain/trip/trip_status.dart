@@ -20,7 +20,4 @@ enum TripStatus {
 
   /// NFC scanned without subsequent motion.
   cancelled,
-
-  /// Trip automatically closed after prolonged inactivity/suspension.
-  autoClosed,
 }
