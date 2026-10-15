@@ -2,9 +2,9 @@
 
 Keep under 15 lines. Overwrite, don't append history.
 
-- Current milestone: M1 complete (124 tests)
-- Last completed: T-010 TripStateMachine phase 1 §6.2 + D-026/D-027
-- Next: M0 decision (Mac)
+- Current milestone: T-012 iOS Autostart Feasibility Probe merged to main
+- Last completed: T-012A/T-012B done; G1 (install) passed; Codemagic unsigned build of 23a7519 passed
+- Active: device gates G2–G6 deferred until app ~70–80%; D-028 stays Proposed / Experimental
+- Next: T-011 or next roadmap milestone
 - Blockers: none
-- Open questions: macOS access path for M0 — owner to decide
 - Repo: github.com/Mohamedmtod/BikeTrack | Toolchain: Flutter 3.47.7 / Dart 3.13.5

@@ -65,3 +65,27 @@ test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for i
 test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22, 27 (property tests)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values
 test/domain/trip/trip_status_test.dart — Unit test for TripStatus enum values
+probes/ios_autostart/lib/main.dart — T-012 diagnostic UI backed by the native probe method channel
+probes/ios_autostart/ios/Runner/AppDelegate.swift — App-level native probe launch, lifecycle, and URL handling
+probes/ios_autostart/ios/Runner/SceneDelegate.swift — Scene URL delivery and Flutter diagnostic channel adapter
+probes/ios_autostart/ios/Runner/Probe/ProbeLog.swift — Durable, append-only JSONL probe log singleton
+probes/ios_autostart/ios/Runner/Probe/RideRecorder.swift — App-level Core Location recorder singleton
+probes/ios_autostart/ios/Runner/Probe/StartGate.swift — Correlated accepted-fix start gate singleton
+probes/ios_autostart/ios/Runner/Probe/NotificationPermission.swift — Local-notification permission and scheduling singleton
+probes/ios_autostart/ios/Runner/Probe/StartRideIntents.swift — Foreground/background App Intents and App Shortcuts provider
+probes/ios_autostart/tool/analyze_log.dart — Dependency-free JSONL probe evidence analyzer
+probes/ios_autostart/test/widget_test.dart — Method-channel-backed diagnostic UI widget test
+probes/ios_autostart/test/analyze_log_test.dart — Fixture-driven JSONL analyzer test
+probes/ios_autostart/test/fixtures/probe_log.jsonl — Mixed valid/malformed probe evidence fixture
+probes/ios_autostart/test/fixtures/latencies.jsonl — Tap and intent latency probe evidence fixture
+probes/ios_autostart/test/fixtures/clock_regression.jsonl — Wall-clock regression probe evidence fixture
+probes/ios_autostart/test/fixtures/fix_timestamp_gaps.jsonl — Fix timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/multi_ride_gaps.jsonl — Per-ride timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/received_timestamp_gaps.jsonl — Received timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/accepted_ratio.jsonl — Accepted/rejected fix ratio probe evidence fixture
+probes/ios_autostart/test/fixtures/invalid_success_notification.jsonl — Invalid success-notification probe evidence fixture
+probes/ios_autostart/test/fixtures/recovery_attempts.jsonl — Recovery-attempt probe evidence fixture
+probes/ios_autostart/test/fixtures/malformed_lines.jsonl — Malformed JSONL probe evidence fixture
+probes/ios_autostart/test/fixtures/missing_required_fields.jsonl — Missing sequence or uptime probe evidence fixture
+probes/ios_autostart/test/fixtures/empty.jsonl — Empty probe evidence fixture
+

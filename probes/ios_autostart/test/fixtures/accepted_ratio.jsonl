@@ -1,0 +1,5 @@
+{"seq":1,"wall_ms":100,"uptime_ms":100,"event":"fix","payload":{"ride_id":"ride-1","accepted":true}}
+{"seq":2,"wall_ms":200,"uptime_ms":200,"event":"fix","payload":{"ride_id":"ride-1","accepted":false}}
+{"seq":3,"wall_ms":300,"uptime_ms":300,"event":"fix","payload":{"ride_id":"ride-1","accepted":false}}
+{"seq":4,"wall_ms":400,"uptime_ms":400,"event":"fix","payload":{"ride_id":"ride-1","accepted":true}}
+{"seq":5,"wall_ms":500,"uptime_ms":500,"event":"fix","payload":{"ride_id":"ride-1","accepted":false}}

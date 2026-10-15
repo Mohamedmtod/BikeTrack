@@ -17,4 +17,10 @@
 | T-009 | Antigravity | Gemini 3.8 Flash Medium | A | B | A | B | Exact values; first failed test run not disclosed |
 | T-010 | Antigravity | Claude Sonnet 4.6 Thinking | A | B | B | B | Spec implemented exactly; stopped correctly at idle gap; incomplete report; self-rated |
 | T-010R | Codex | GPT-5.6 Terra Extra High | A | A | A | A | Found stale-evidence and timeline majors |
+| T-012A | Antigravity / Gemini 3.8 Flash (Medium) | Probe shell + Codemagic IPA pipeline | pending owner review |
+| T-012B | Claude Code CLI / Claude Sonnet 5 | Native probe recorder + intents + analyzer | pending Codemagic build + Codex review |
+| T-012B-fix2 | Claude Code CLI / Claude Sonnet 5 | Compile + review fixes | claimed fix #3 not applied (UNMutableUserNotificationContent remained) |
+| T-012B-fix3 | Antigravity / Gemini 3.8 Flash (Medium) | UNMutableNotificationContent rename + AGENT_LOG | pending Codemagic build |
+| T-012M | Antigravity / Gemini 3.8 Flash | Squash merge T-012 probe to main | pending owner review |
+
 

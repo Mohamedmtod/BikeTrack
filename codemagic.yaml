@@ -1,0 +1,32 @@
+workflows:
+  ios-probe-unsigned:
+    name: iOS Probe Unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Versions
+        script: flutter --version && xcodebuild -version
+      - name: Build unsigned iOS release
+        script: |
+          cd probes/ios_autostart
+          flutter pub get
+          flutter build ios --release --no-codesign
+      - name: Verify Info.plist keys
+        script: |
+          cd probes/ios_autostart/build/ios/iphoneos
+          plutil -p Runner.app/Info.plist
+      - name: Package unsigned IPA
+        script: |
+          cd probes/ios_autostart/build/ios/iphoneos
+          mkdir -p Payload
+          cp -R Runner.app Payload/
+          zip -qry BikeTrackProbe.ipa Payload
+      - name: Verify IPA
+        script: |
+          cd probes/ios_autostart/build/ios/iphoneos
+          unzip -l BikeTrackProbe.ipa | head -20
+    artifacts:
+      - probes/ios_autostart/build/ios/iphoneos/BikeTrackProbe.ipa
