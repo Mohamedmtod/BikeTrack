@@ -109,7 +109,7 @@ Reviewer: Owner (merged to main)
 
 ### T-011 — TripStateMachine phase 2 (M4)
 Owner: Claude Code
-Status: in-progress
+Status: done
 Branch: task/T-011-trip-state-phase2
 Plan refs: §6.2, §6.4, §7.2, §7.5, §7.7, D-026, D-027, D-030
 Goal: Implement D-030 pure-Dart phase-2 trip lifecycle behavior: safe GPS-gap/recovery closure, idle cycling auto-start, forgotten-trip review closure, and close reasons.

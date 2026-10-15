@@ -19,7 +19,11 @@ TripStepResult suspectedForgottenStep(
   if (event is UserStop) {
     return _endTrip(
       state,
-      _terminalEnd(state, state.lastKnownMovementMs ?? event.nowMs, event.nowMs),
+      _terminalEnd(
+        state,
+        state.lastKnownMovementMs ?? event.nowMs,
+        event.nowMs,
+      ),
       TripStatus.completed,
       TripCloseReason.userStopped,
     );

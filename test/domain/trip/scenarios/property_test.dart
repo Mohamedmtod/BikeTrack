@@ -41,22 +41,25 @@ void main() {
       },
     );
 
-    test('21: idle+Activity(cycling) -> active at historical activity start', () {
-      final result = TripStateMachine.step(
-        TripState.idle(),
-        ActivityChanged(
-          60000,
-          ActivityState(type: ActivityType.cycling, sinceMs: 0),
-        ),
-        cfg,
-      );
-      expect(result.state.status, TripStatus.active);
-      expect(result.state.tripStartMs, 0);
-      expect(result.commands, [
-        StartGps(GpsMode.high),
-        OpenSegment(SegmentType.cycling, 0),
-      ]);
-    });
+    test(
+      '21: idle+Activity(cycling) -> active at historical activity start',
+      () {
+        final result = TripStateMachine.step(
+          TripState.idle(),
+          ActivityChanged(
+            60000,
+            ActivityState(type: ActivityType.cycling, sinceMs: 0),
+          ),
+          cfg,
+        );
+        expect(result.state.status, TripStatus.active);
+        expect(result.state.tripStartMs, 0);
+        expect(result.commands, [
+          StartGps(GpsMode.high),
+          OpenSegment(SegmentType.cycling, 0),
+        ]);
+      },
+    );
 
     test('22: property: 500 random non-decreasing events never throw; '
         'status in {null,pending,active,paused,suspectedForgotten,needsReview,completed}; '

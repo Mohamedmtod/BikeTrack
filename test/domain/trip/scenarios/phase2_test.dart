@@ -52,28 +52,31 @@ void main() {
       ]);
     });
 
-    test('duplicate and stale auto-start evidence does not duplicate a trip', () {
-      final first = TripStateMachine.step(
-        TripState.idle(),
-        _activity(120000, ActivityType.cycling, 90000),
-        cfg,
-      );
-      final duplicate = TripStateMachine.step(
-        first.state,
-        _activity(120000, ActivityType.cycling, 90000),
-        cfg,
-      );
-      expect(duplicate.state.status, TripStatus.active);
-      expect(duplicate.commands, isEmpty);
+    test(
+      'duplicate and stale auto-start evidence does not duplicate a trip',
+      () {
+        final first = TripStateMachine.step(
+          TripState.idle(),
+          _activity(120000, ActivityType.cycling, 90000),
+          cfg,
+        );
+        final duplicate = TripStateMachine.step(
+          first.state,
+          _activity(120000, ActivityType.cycling, 90000),
+          cfg,
+        );
+        expect(duplicate.state.status, TripStatus.active);
+        expect(duplicate.commands, isEmpty);
 
-      final stale = TripStateMachine.step(
-        duplicate.state,
-        _activity(119999, ActivityType.cycling, 90000),
-        cfg,
-      );
-      expect(stale.state, duplicate.state);
-      expect(stale.commands, isEmpty);
-    });
+        final stale = TripStateMachine.step(
+          duplicate.state,
+          _activity(119999, ActivityType.cycling, 90000),
+          cfg,
+        );
+        expect(stale.state, duplicate.state);
+        expect(stale.commands, isEmpty);
+      },
+    );
 
     test('GPS gap closes the known segment at last trusted GPS time', () {
       final active = TripStateMachine.step(
@@ -125,44 +128,54 @@ void main() {
       ]);
     });
 
-    test('movement after a gap opens a new segment without bridging the gap', () {
-      var state = TripStateMachine.step(
-        TripState.idle(),
-        UserStart(0),
-        cfg,
-      ).state;
-      final gap = TripStateMachine.step(state, GpsGapDetected(100000, 70000), cfg);
-      state = gap.state;
-      final resumed = TripStateMachine.step(
-        state,
-        _activity(120000, ActivityType.cycling, 110000),
-        cfg,
-      );
+    test(
+      'movement after a gap opens a new segment without bridging the gap',
+      () {
+        var state = TripStateMachine.step(
+          TripState.idle(),
+          UserStart(0),
+          cfg,
+        ).state;
+        final gap = TripStateMachine.step(
+          state,
+          GpsGapDetected(100000, 70000),
+          cfg,
+        );
+        state = gap.state;
+        final resumed = TripStateMachine.step(
+          state,
+          _activity(120000, ActivityType.cycling, 110000),
+          cfg,
+        );
 
-      expect(gap.commands.last, const ResetGpsAnchor());
-      expect(resumed.state.segmentType, SegmentType.cycling);
-      expect(resumed.state.segmentStartMs, 110000);
-      expect(resumed.commands, [
-        CloseSegment(110000),
-        OpenSegment(SegmentType.cycling, 110000),
-      ]);
-    });
+        expect(gap.commands.last, const ResetGpsAnchor());
+        expect(resumed.state.segmentType, SegmentType.cycling);
+        expect(resumed.state.segmentStartMs, 110000);
+        expect(resumed.commands, [
+          CloseSegment(110000),
+          OpenSegment(SegmentType.cycling, 110000),
+        ]);
+      },
+    );
 
-    test('paused inactivity reaches suspectedForgotten and cycling resumes active', () {
-      final suspected = _pausedThenSuspected();
-      expect(suspected.status, TripStatus.suspectedForgotten);
-      expect(suspected.suspectedSinceMs, 1000000);
+    test(
+      'paused inactivity reaches suspectedForgotten and cycling resumes active',
+      () {
+        final suspected = _pausedThenSuspected();
+        expect(suspected.status, TripStatus.suspectedForgotten);
+        expect(suspected.suspectedSinceMs, 1000000);
 
-      final resumed = TripStateMachine.step(
-        suspected,
-        _activity(1000001, ActivityType.cycling, 990000),
-        cfg,
-      );
-      expect(resumed.state.status, TripStatus.active);
-      expect(resumed.state.pausedSinceMs, isNull);
-      expect(resumed.state.suspectedSinceMs, isNull);
-      expect(resumed.commands, [const StartGps(GpsMode.high)]);
-    });
+        final resumed = TripStateMachine.step(
+          suspected,
+          _activity(1000001, ActivityType.cycling, 990000),
+          cfg,
+        );
+        expect(resumed.state.status, TripStatus.active);
+        expect(resumed.state.pausedSinceMs, isNull);
+        expect(resumed.state.suspectedSinceMs, isNull);
+        expect(resumed.commands, [const StartGps(GpsMode.high)]);
+      },
+    );
 
     test('auto-close ends at the conservative last known movement time', () {
       final suspected = _pausedThenSuspected();
@@ -204,33 +217,36 @@ void main() {
       ]);
     });
 
-    test('duplicate and stale recovery events do not emit terminal commands twice', () {
-      final active = TripStateMachine.step(
-        TripState.idle(),
-        UserStart(0),
-        cfg,
-      ).state;
-      final recovered = TripStateMachine.step(
-        active,
-        RecoveryDetected(1000000, 300000, 800000),
-        cfg,
-      );
-      final duplicate = TripStateMachine.step(
-        recovered.state,
-        RecoveryDetected(1000000, 300000, 800000),
-        cfg,
-      );
-      expect(duplicate.commands, isEmpty);
-      expect(duplicate.state.status, TripStatus.needsReview);
+    test(
+      'duplicate and stale recovery events do not emit terminal commands twice',
+      () {
+        final active = TripStateMachine.step(
+          TripState.idle(),
+          UserStart(0),
+          cfg,
+        ).state;
+        final recovered = TripStateMachine.step(
+          active,
+          RecoveryDetected(1000000, 300000, 800000),
+          cfg,
+        );
+        final duplicate = TripStateMachine.step(
+          recovered.state,
+          RecoveryDetected(1000000, 300000, 800000),
+          cfg,
+        );
+        expect(duplicate.commands, isEmpty);
+        expect(duplicate.state.status, TripStatus.needsReview);
 
-      final stale = TripStateMachine.step(
-        duplicate.state,
-        RecoveryDetected(999999, 100000, 900000),
-        cfg,
-      );
-      expect(stale.state, duplicate.state);
-      expect(stale.commands, isEmpty);
-    });
+        final stale = TripStateMachine.step(
+          duplicate.state,
+          RecoveryDetected(999999, 100000, 900000),
+          cfg,
+        );
+        expect(stale.state, duplicate.state);
+        expect(stale.commands, isEmpty);
+      },
+    );
 
     test('user stop remains completed with a userStopped close reason', () {
       final active = TripStateMachine.step(
@@ -267,10 +283,7 @@ void main() {
               ActivityType.values[random.nextInt(ActivityType.values.length)],
               nowMs - random.nextInt(240000),
             ),
-            4 => GpsGapDetected(
-              nowMs,
-              nowMs - random.nextInt(480000),
-            ),
+            4 => GpsGapDetected(nowMs, nowMs - random.nextInt(480000)),
             5 => RecoveryDetected(
               nowMs,
               nowMs - random.nextInt(480000),
@@ -295,7 +308,9 @@ void main() {
             if (command is OpenSegment) {
               expect(
                 command.startMs,
-                greaterThanOrEqualTo(result.state.tripStartMs ?? command.startMs),
+                greaterThanOrEqualTo(
+                  result.state.tripStartMs ?? command.startMs,
+                ),
                 reason: 'seed $seed i=$i opened before trip start',
               );
               openSegmentStartMs = command.startMs;

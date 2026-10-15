@@ -29,10 +29,7 @@ TripStepResult _gapStep(TripState state, GpsGapDetected event) {
     event.detectedAtMs,
   );
   return TripStepResult(
-    state.copyWith(
-      segmentType: SegmentType.gap,
-      segmentStartMs: boundary,
-    ),
+    state.copyWith(segmentType: SegmentType.gap, segmentStartMs: boundary),
     [
       CloseSegment(boundary),
       OpenSegment(SegmentType.gap, boundary),
