@@ -50,11 +50,28 @@ final class StartGate {
       pending.timeout.cancel()
       self.pending = nil
       NotificationPermission.shared.postSuccess(rideID: pending.rideID, attemptID: pending.attemptID) { scheduled in
-        ProbeLog.shared.append(event: scheduled ? "notify_success" : "notify_failure", payload: [
+        guard scheduled else {
+          ProbeLog.shared.append(event: "notify_failure", payload: [
+            "ride_id": pending.rideID,
+            "attempt_id": pending.attemptID,
+            "reason": "notification_schedule_failed",
+          ])
+          pending.completion(.failed("notification_schedule_failed"))
+          return
+        }
+
+        let auditWritten = ProbeLog.shared.append(event: "notify_success", payload: [
           "ride_id": pending.rideID,
           "attempt_id": pending.attemptID,
-          "reason": scheduled ? "" : "notification_schedule_failed",
         ])
+        guard auditWritten else {
+          ProbeLog.shared.append(event: "notify_success_audit_write_failed", payload: [
+            "ride_id": pending.rideID,
+            "attempt_id": pending.attemptID,
+          ])
+          pending.completion(.failed("notify_success_audit_write_failed"))
+          return
+        }
         pending.completion(.started)
       }
     }

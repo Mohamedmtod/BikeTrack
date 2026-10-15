@@ -77,12 +77,15 @@ probes/ios_autostart/tool/analyze_log.dart — Dependency-free JSONL probe evide
 probes/ios_autostart/test/widget_test.dart — Method-channel-backed diagnostic UI widget test
 probes/ios_autostart/test/analyze_log_test.dart — Fixture-driven JSONL analyzer test
 probes/ios_autostart/test/fixtures/probe_log.jsonl — Mixed valid/malformed probe evidence fixture
-test/fixtures/latencies.jsonl — Tap and intent latency probe evidence fixture
-test/fixtures/fix_timestamp_gaps.jsonl — Fix timestamp gap probe evidence fixture
-test/fixtures/received_timestamp_gaps.jsonl — Received timestamp gap probe evidence fixture
-test/fixtures/accepted_ratio.jsonl — Accepted/rejected fix ratio probe evidence fixture
-test/fixtures/invalid_success_notification.jsonl — Invalid success-notification probe evidence fixture
-test/fixtures/recovery_attempts.jsonl — Recovery-attempt probe evidence fixture
-test/fixtures/malformed_lines.jsonl — Malformed JSONL probe evidence fixture
-test/fixtures/empty.jsonl — Empty probe evidence fixture
+probes/ios_autostart/test/fixtures/latencies.jsonl — Tap and intent latency probe evidence fixture
+probes/ios_autostart/test/fixtures/clock_regression.jsonl — Wall-clock regression probe evidence fixture
+probes/ios_autostart/test/fixtures/fix_timestamp_gaps.jsonl — Fix timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/multi_ride_gaps.jsonl — Per-ride timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/received_timestamp_gaps.jsonl — Received timestamp gap probe evidence fixture
+probes/ios_autostart/test/fixtures/accepted_ratio.jsonl — Accepted/rejected fix ratio probe evidence fixture
+probes/ios_autostart/test/fixtures/invalid_success_notification.jsonl — Invalid success-notification probe evidence fixture
+probes/ios_autostart/test/fixtures/recovery_attempts.jsonl — Recovery-attempt probe evidence fixture
+probes/ios_autostart/test/fixtures/malformed_lines.jsonl — Malformed JSONL probe evidence fixture
+probes/ios_autostart/test/fixtures/missing_required_fields.jsonl — Missing sequence or uptime probe evidence fixture
+probes/ios_autostart/test/fixtures/empty.jsonl — Empty probe evidence fixture
 

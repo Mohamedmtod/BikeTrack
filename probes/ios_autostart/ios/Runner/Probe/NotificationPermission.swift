@@ -63,7 +63,7 @@ final class NotificationPermission {
     let content = UNMutableUserNotificationContent()
     content.title = title
     content.body = body
-    content.sound = .default
+    content.sound = UNNotificationSound.default
     content.userInfo = userInfo
     // https://developer.apple.com/documentation/usernotifications/unusernotificationcenter/add(_:withcompletionhandler:)
     let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)

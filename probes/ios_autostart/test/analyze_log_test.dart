@@ -13,14 +13,29 @@ void main() {
   test('measures tap and intent latency to the first accepted fix', () async {
     final analysis = await analyzeFixture('latencies');
 
+    expect(analysis.startLatenciesMs, [1000]);
     expect(analysis.tapLatenciesMs, [1050]);
     expect(analysis.intentLatenciesMs, [1100]);
+  });
+
+  test('uses sequence and uptime when the wall clock regresses', () async {
+    final analysis = await analyzeFixture('clock_regression');
+
+    expect(analysis.startLatenciesMs, [1000]);
+    expect(analysis.invalidSuccessNotifications, 0);
   });
 
   test('counts fix timestamp gaps over 30 seconds', () async {
     final analysis = await analyzeFixture('fix_timestamp_gaps');
 
     expect(analysis.fixTimestampGapsOver30Seconds, 1);
+  });
+
+  test('keeps timestamp gaps within each ride', () async {
+    final analysis = await analyzeFixture('multi_ride_gaps');
+
+    expect(analysis.fixTimestampGapsOver30Seconds, 0);
+    expect(analysis.receivedTimestampGapsOver30Seconds, 0);
   });
 
   test('counts received timestamp gaps over 30 seconds', () async {
@@ -51,6 +66,14 @@ void main() {
 
   test('skips and counts malformed lines without crashing', () async {
     final analysis = await analyzeFixture('malformed_lines');
+
+    expect(analysis.totalLines, 3);
+    expect(analysis.malformedLines, 2);
+    expect(analysis.acceptedFixes, 1);
+  });
+
+  test('counts records missing sequence or uptime as malformed', () async {
+    final analysis = await analyzeFixture('missing_required_fields');
 
     expect(analysis.totalLines, 3);
     expect(analysis.malformedLines, 2);

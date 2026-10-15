@@ -83,7 +83,13 @@ class _ProbeHomePageState extends State<ProbeHomePage> {
 
   Future<void> _start() async {
     await _run(() async {
-      await _channel.invokeMethod<void>('start');
+      final response = await _channel.invokeMapMethod<String, dynamic>('start');
+      if (response?['started'] != true) {
+        throw PlatformException(
+          code: 'start_failed',
+          message: response?['reason'] as String? ?? 'Unknown failure',
+        );
+      }
       await _loadStatus();
     });
   }

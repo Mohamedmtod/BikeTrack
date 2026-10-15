@@ -27,20 +27,18 @@ struct BikeTrackShortcuts: AppShortcutsProvider {
   static var shortcutTileColor: ShortcutTileColor = .blue
 
   static var appShortcuts: [AppShortcut] {
-    [
-      AppShortcut(
-        intent: StartRideForegroundIntent(),
-        phrases: ["Start a ride in \(.applicationName)"],
-        shortTitle: "Start Ride",
-        systemImageName: "bicycle"
-      ),
-      AppShortcut(
-        intent: StartRideBackgroundIntent(),
-        phrases: ["Start a background ride in \(.applicationName)"],
-        shortTitle: "Start Background Ride",
-        systemImageName: "bicycle"
-      ),
-    ]
+    AppShortcut(
+      intent: StartRideForegroundIntent(),
+      phrases: ["Start a ride in \(.applicationName)"],
+      shortTitle: "Start Ride",
+      systemImageName: "bicycle"
+    )
+    AppShortcut(
+      intent: StartRideBackgroundIntent(),
+      phrases: ["Start a background ride in \(.applicationName)"],
+      shortTitle: "Start Background Ride",
+      systemImageName: "bicycle"
+    )
   }
 }
 
@@ -57,17 +55,23 @@ enum ProbeIntentError: LocalizedError {
 enum ProbeIntentRunner {
   static func run(variant: String) async throws {
     let attemptID = UUID().uuidString
-    let recorderStatus = RideRecorder.shared.status()
-    // https://developer.apple.com/documentation/uikit/uiapplication/applicationstate
-    ProbeLog.shared.append(event: "intent_invoked", payload: [
-      "variant": variant,
-      "attempt_id": attemptID,
-      "application_state": UIApplication.shared.applicationState.rawValue,
-      "protected_data_available": UIApplication.shared.isProtectedDataAvailable,
-      "location_authorization": recorderStatus["locationAuthorization"] ?? "unknown",
-    ])
+    let startResult = await MainActor.run { () -> RideRecorder.StartResult in
+      let recorderStatus = RideRecorder.shared.status()
+      // https://developer.apple.com/documentation/uikit/uiapplication/applicationstate
+      ProbeLog.shared.append(event: "intent_invoked", payload: [
+        "variant": variant,
+        "attempt_id": attemptID,
+        "application_state": UIApplication.shared.applicationState.rawValue,
+        "protected_data_available": UIApplication.shared.isProtectedDataAvailable,
+        "location_authorization": recorderStatus["locationAuthorization"] ?? "unknown",
+      ])
+      return RideRecorder.shared.start(
+        trigger: "intent_\(variant)",
+        attemptID: attemptID
+      )
+    }
 
-    switch RideRecorder.shared.start(trigger: "intent_\(variant)", attemptID: attemptID) {
+    switch startResult {
     case let .started(rideID):
       let outcome = await StartGate.shared.waitForFirstAcceptedFix(rideID: rideID, attemptID: attemptID)
       if case let .failed(reason) = outcome {

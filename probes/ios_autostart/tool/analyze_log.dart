@@ -51,9 +51,10 @@ class LogAnalysis {
 }
 
 class _Record {
-  const _Record(this.wallMs, this.event, this.payload);
+  const _Record(this.sequence, this.uptimeMs, this.event, this.payload);
 
-  final int wallMs;
+  final int sequence;
+  final int uptimeMs;
   final String event;
   final Map<String, dynamic> payload;
 
@@ -71,7 +72,9 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
     try {
       final decoded = jsonDecode(line);
       if (decoded is! Map<String, dynamic> ||
+          decoded['seq'] is! num ||
           decoded['wall_ms'] is! num ||
+          decoded['uptime_ms'] is! num ||
           decoded['event'] is! String ||
           decoded['payload'] is! Map) {
         malformedLines++;
@@ -79,7 +82,8 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
       }
       records.add(
         _Record(
-          (decoded['wall_ms'] as num).toInt(),
+          (decoded['seq'] as num).toInt(),
+          (decoded['uptime_ms'] as num).toInt(),
           decoded['event'] as String,
           Map<String, dynamic>.from(decoded['payload'] as Map),
         ),
@@ -89,8 +93,10 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
     }
   }
 
+  final recordsBySequence = [...records]
+    ..sort((left, right) => left.sequence.compareTo(right.sequence));
   final startsByAttempt = <String, _Record>{};
-  for (final record in records.where(
+  for (final record in recordsBySequence.where(
     (record) => record.event == 'start_requested',
   )) {
     final attemptID = record.attemptID;
@@ -99,12 +105,12 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
     }
   }
 
-  final acceptedFixes = records
+  final acceptedFixes = recordsBySequence
       .where(
         (record) => record.event == 'fix' && record.payload['accepted'] == true,
       )
       .toList();
-  final rejectedFixes = records
+  final rejectedFixes = recordsBySequence
       .where(
         (record) => record.event == 'fix' && record.payload['accepted'] != true,
       )
@@ -119,17 +125,19 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
 
   int gapsFor(String key) {
     var gaps = 0;
-    int? previous;
-    for (final fix in acceptedFixes) {
-      final value = fix.payload[key];
-      if (value is! num) {
-        continue;
+    for (final fixes in acceptedByRide.values) {
+      int? previous;
+      for (final fix in fixes) {
+        final value = fix.payload[key];
+        if (value is! num) {
+          continue;
+        }
+        final timestamp = value.toInt();
+        if (previous != null && timestamp - previous > 30000) {
+          gaps++;
+        }
+        previous = timestamp;
       }
-      final timestamp = value.toInt();
-      if (previous != null && timestamp - previous > 30000) {
-        gaps++;
-      }
-      previous = timestamp;
     }
     return gaps;
   }
@@ -137,26 +145,27 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
   List<int> latencyFor(Iterable<_Record> beginnings) {
     final result = <int>[];
     for (final beginning in beginnings) {
-      final rideID =
-          beginning.rideID ??
-          (beginning.attemptID == null
-              ? null
-              : startsByAttempt[beginning.attemptID]?.rideID);
-      if (rideID == null) {
+      final start = beginning.event == 'start_requested'
+          ? beginning
+          : beginning.attemptID == null
+          ? null
+          : startsByAttempt[beginning.attemptID];
+      if (start == null || start.rideID == null) {
         continue;
       }
-      final firstFix = acceptedByRide[rideID]
-          ?.where((fix) => fix.wallMs >= beginning.wallMs)
+      final rideID = start.rideID!;
+      final firstFix = (acceptedByRide[rideID] ?? const <_Record>[])
+          .where((fix) => fix.sequence > start.sequence)
           .firstOrNull;
       if (firstFix != null) {
-        result.add(firstFix.wallMs - beginning.wallMs);
+        result.add(firstFix.uptimeMs - beginning.uptimeMs);
       }
     }
     return result;
   }
 
   var invalidSuccessNotifications = 0;
-  for (final notification in records.where(
+  for (final notification in recordsBySequence.where(
     (record) => record.event == 'notify_success',
   )) {
     final rideID = notification.rideID;
@@ -165,7 +174,7 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
     final hasAcceptedFix =
         rideID != null &&
         (acceptedByRide[rideID] ?? const <_Record>[]).any(
-          (fix) => fix.wallMs <= notification.wallMs,
+          (fix) => fix.sequence < notification.sequence,
         );
     if (rideID == null || start?.rideID != rideID || !hasAcceptedFix) {
       invalidSuccessNotifications++;
@@ -180,17 +189,17 @@ LogAnalysis analyzeLines(Iterable<String> lines) {
     fixTimestampGapsOver30Seconds: gapsFor('fix_ts_ms'),
     receivedTimestampGapsOver30Seconds: gapsFor('recv_ms'),
     invalidSuccessNotifications: invalidSuccessNotifications,
-    recoveryAttempts: records
+    recoveryAttempts: recordsBySequence
         .where((record) => record.event == 'recovery_attempt')
         .length,
     startLatenciesMs: latencyFor(
-      records.where((record) => record.event == 'start_requested'),
+      recordsBySequence.where((record) => record.event == 'start_requested'),
     ),
     tapLatenciesMs: latencyFor(
-      records.where((record) => record.event == 'url_received'),
+      recordsBySequence.where((record) => record.event == 'url_received'),
     ),
     intentLatenciesMs: latencyFor(
-      records.where((record) => record.event == 'intent_invoked'),
+      recordsBySequence.where((record) => record.event == 'intent_invoked'),
     ),
   );
 }

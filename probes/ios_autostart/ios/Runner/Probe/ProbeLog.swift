@@ -105,7 +105,7 @@ final class ProbeLog {
     return text.split(separator: "\n").reduce(0) { highest, line in
       guard let data = line.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let sequence = object?["seq"] as? NSNumber
+            let sequence = object["seq"] as? NSNumber
       else {
         return highest
       }

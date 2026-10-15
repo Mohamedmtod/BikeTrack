@@ -1,10 +1,11 @@
 import CoreLocation
 import Foundation
 
+@MainActor
 final class RideRecorder: NSObject, CLLocationManagerDelegate {
   static let shared = RideRecorder()
 
-  enum StartResult {
+  enum StartResult: Sendable {
     case started(rideID: String)
     case failed(String)
   }
@@ -15,8 +16,7 @@ final class RideRecorder: NSObject, CLLocationManagerDelegate {
   private let rideIDKey = "probe.rideID"
   private var pendingStart: (trigger: String, attemptID: String)?
   private var backgroundActivitySession: CLBackgroundActivitySession?
-  @available(iOS 18.0, *)
-  private var serviceSession: CLServiceSession?
+  private var serviceSession: AnyObject?
 
   private override init() {
     super.init()
@@ -59,6 +59,7 @@ final class RideRecorder: NSObject, CLLocationManagerDelegate {
     manager.stopUpdatingLocation()
     backgroundActivitySession = nil
     if #available(iOS 18.0, *) {
+      (serviceSession as? CLServiceSession)?.invalidate()
       serviceSession = nil
     }
     defaults.set(false, forKey: activeKey)
@@ -142,8 +143,16 @@ final class RideRecorder: NSObject, CLLocationManagerDelegate {
         "accepted": accepted,
         "reject_reason": reason ?? "",
       ])
-      if accepted && written {
-        StartGate.shared.acceptedFixWritten(rideID: rideID)
+      if accepted {
+        if written {
+          StartGate.shared.acceptedFixWritten(rideID: rideID)
+        } else {
+          StartGate.shared.fail(
+            rideID: rideID,
+            attemptID: pendingStart?.attemptID,
+            reason: "accepted_fix_write_failed"
+          )
+        }
       }
     }
   }
@@ -170,7 +179,7 @@ final class RideRecorder: NSObject, CLLocationManagerDelegate {
     }
     if #available(iOS 18.0, *) {
       // https://developer.apple.com/documentation/corelocation/clservicesession
-      serviceSession = CLServiceSession(authorization: .always)
+      serviceSession = CLServiceSession(authorization: .always) as AnyObject
     }
     // https://developer.apple.com/documentation/corelocation/cllocationmanager/startupdatinglocation()
     manager.startUpdatingLocation()

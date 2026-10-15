@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 
+@MainActor
 class SceneDelegate: FlutterSceneDelegate {
   private var probeChannel: FlutterMethodChannel?
 
@@ -69,8 +70,18 @@ class SceneDelegate: FlutterSceneDelegate {
       let attemptID = UUID().uuidString
       switch RideRecorder.shared.start(trigger: "flutter", attemptID: attemptID) {
       case let .started(rideID):
-        StartGate.shared.begin(rideID: rideID, attemptID: attemptID) { _ in }
-        result(["started": true, "rideId": rideID])
+        Task {
+          let outcome = await StartGate.shared.waitForFirstAcceptedFix(
+            rideID: rideID,
+            attemptID: attemptID
+          )
+          switch outcome {
+          case .started:
+            result(["started": true, "rideId": rideID, "reason": ""])
+          case let .failed(reason):
+            result(["started": false, "rideId": rideID, "reason": reason])
+          }
+        }
       case let .failed(reason):
         NotificationPermission.shared.postFailure(rideID: nil, attemptID: attemptID, reason: reason) { scheduled in
           ProbeLog.shared.append(event: "notify_failure", payload: [
@@ -79,7 +90,7 @@ class SceneDelegate: FlutterSceneDelegate {
             "scheduled": scheduled,
           ])
         }
-        result(FlutterError(code: "start_failed", message: reason, details: nil))
+        result(["started": false, "reason": reason])
       }
     case "stop":
       RideRecorder.shared.stop()
