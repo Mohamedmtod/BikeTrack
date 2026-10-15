@@ -19,5 +19,7 @@
 | T-010R | Codex | GPT-5.6 Terra Extra High | A | A | A | A | Found stale-evidence and timeline majors |
 | T-012A | Antigravity / Gemini 3.8 Flash (Medium) | Probe shell + Codemagic IPA pipeline | pending owner review |
 | T-012B | Claude Code CLI / Claude Sonnet 5 | Native probe recorder + intents + analyzer | pending Codemagic build + Codex review |
+| T-012B-fix2 | Claude Code CLI / Claude Sonnet 5 | Compile + review fixes | claimed fix #3 not applied (UNMutableUserNotificationContent remained) |
+| T-012B-fix3 | Antigravity / Gemini 3.8 Flash (Medium) | UNMutableNotificationContent rename + AGENT_LOG | pending Codemagic build |
 
 

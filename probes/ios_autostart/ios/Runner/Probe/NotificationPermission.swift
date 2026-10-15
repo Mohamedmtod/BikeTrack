@@ -59,8 +59,8 @@ final class NotificationPermission {
     userInfo: [String: String],
     completion: @escaping (Bool) -> Void
   ) {
-    // https://developer.apple.com/documentation/usernotifications/unmutableusernotificationcontent
-    let content = UNMutableUserNotificationContent()
+    // https://developer.apple.com/documentation/usernotifications/unmutablenotificationcontent
+    let content = UNMutableNotificationContent()
     content.title = title
     content.body = body
     content.sound = UNNotificationSound.default
