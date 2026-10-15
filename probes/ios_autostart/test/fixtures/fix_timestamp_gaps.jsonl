@@ -1,0 +1,2 @@
+{"wall_ms":100,"event":"fix","payload":{"ride_id":"ride-1","accepted":true,"fix_ts_ms":1000,"recv_ms":1000}}
+{"wall_ms":200,"event":"fix","payload":{"ride_id":"ride-1","accepted":true,"fix_ts_ms":31001,"recv_ms":1100}}

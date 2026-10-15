@@ -1,0 +1,5 @@
+{"wall_ms":100,"event":"intent_invoked","payload":{"attempt_id":"attempt-1"}}
+{"wall_ms":150,"event":"url_received","payload":{"attempt_id":"attempt-1"}}
+{"wall_ms":200,"event":"start_requested","payload":{"ride_id":"ride-1","attempt_id":"attempt-1"}}
+{"wall_ms":250,"event":"fix","payload":{"ride_id":"ride-1","accepted":false}}
+{"wall_ms":1200,"event":"fix","payload":{"ride_id":"ride-1","accepted":true}}

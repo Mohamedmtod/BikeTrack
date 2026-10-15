@@ -20,6 +20,7 @@ class SceneDelegate: FlutterSceneDelegate {
   override func sceneDidBecomeActive(_ scene: UIScene) {
     ProbeLog.shared.append(event: "scene_active")
     super.sceneDidBecomeActive(scene)
+    installProbeChannel()
   }
 
   override func sceneDidEnterBackground(_ scene: UIScene) {
@@ -53,6 +54,7 @@ class SceneDelegate: FlutterSceneDelegate {
       self?.handle(call, result: result)
     }
     probeChannel = channel
+    ProbeLog.shared.append(event: "probe_channel_installed")
   }
 
   private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

@@ -1,0 +1,3 @@
+{"wall_ms":100,"event":"recovery_attempt","payload":{"ride_id":"ride-1"}}
+{"wall_ms":200,"event":"fix","payload":{"ride_id":"ride-1","accepted":true}}
+{"wall_ms":300,"event":"recovery_attempt","payload":{"ride_id":"ride-1"}}
