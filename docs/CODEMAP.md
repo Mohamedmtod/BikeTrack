@@ -96,4 +96,12 @@ probes/ios_autostart/test/fixtures/recovery_attempts.jsonl — Recovery-attempt 
 probes/ios_autostart/test/fixtures/malformed_lines.jsonl — Malformed JSONL probe evidence fixture
 probes/ios_autostart/test/fixtures/missing_required_fields.jsonl — Missing sequence or uptime probe evidence fixture
 probes/ios_autostart/test/fixtures/empty.jsonl — Empty probe evidence fixture
+pigeons/recorder.dart — Pigeon source contract for the live native recorder bridge
+ios/Runner/Generated/Recorder.g.swift — Generated Swift Pigeon bindings for the recorder contract
+ios/Runner/Recorder/RideRecorder.swift — Core Location live raw-fix recorder and Pigeon host implementation
+lib/bridge/generated/recorder.g.dart — Generated Dart Pigeon bindings for the recorder contract
+lib/bridge/recorder_api.dart — Testable Dart interface and Pigeon client for recorder commands
+lib/bridge/recorder_events.dart — Typed bridge events and raw-fix to GpsSample mapping
+lib/bridge/recorder_bridge.dart — Recorder command facade and native callback stream adapter
+test/bridge/recorder_bridge_test.dart — Unit tests for recorder command and callback bridge mappings
 

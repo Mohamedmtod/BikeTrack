@@ -123,6 +123,22 @@ Reviewer: TBD
 
 ---
 
+### T-013 — Native iOS recorder migration & Pigeon live bridge
+Owner: Claude Code CLI
+Status: done
+Branch: `task/T-013-native-recorder`
+Plan refs: §3.1, §3.2, §4, D-015, D-029
+Goal: Migrate the required Core Location recorder behavior and expose a typed, live raw-GPS bridge to Dart with no native threshold filtering.
+Allowed files: `pigeons/recorder.dart`, `lib/bridge/**`, `ios/Runner/AppDelegate.swift`, `ios/Runner/SceneDelegate.swift`, `ios/Runner/Info.plist`, `ios/Runner/Recorder/**`, `ios/Runner/Generated/**`, `ios/Runner.xcodeproj/project.pbxproj`, `test/bridge/**`, `docs/DECISIONS.md`, `docs/TASKS.md`, `docs/STATUS.md`, `docs/CODEMAP.md`, `pubspec.yaml`, `pubspec.lock`
+Note: `ios/Runner.xcodeproj/project.pbxproj` is limited to registering `RideRecorder.swift` and `Recorder.g.swift` as Runner target sources.
+Forbidden: all other files, especially `lib/domain/**`, `probes/**`, persistence/data, UI, HealthKit, NFC, and buffering/replay features.
+Steps: Add Pigeon contract and generated bindings; migrate live raw Core Location recorder; add Dart adapter and unit tests.
+Tests required: bridge command dispatch, raw-fix mapping, required fields, native error and authorization mappings; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: typed Pigeon live bridge with raw location forwarding; generated Dart/Swift bindings committed; domain unchanged; required bridge tests pass.
+Reviewer: Owner / Codex
+
+---
+
 ### T-014 — Windows domain replay harness
 Owner: Claude Code CLI
 Status: done
