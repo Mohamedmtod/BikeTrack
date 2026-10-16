@@ -44,6 +44,20 @@ class RecorderLocationError {
   String? rideId;
 }
 
+class MapCoordinate {
+  late double latitudeDeg;
+  late double longitudeDeg;
+}
+
+class MapRoutePiece {
+  late List<MapCoordinate> points;
+}
+
+@HostApi()
+abstract class RouteMapHostApi {
+  void updateRoute(int viewId, List<MapRoutePiece> pieces);
+}
+
 @HostApi()
 abstract class RecorderHostApi {
   RecorderStartResult start(String trigger, String attemptId);

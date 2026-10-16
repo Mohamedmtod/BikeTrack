@@ -19,7 +19,8 @@ import 'data/database/app_database.dart';
 import 'data/events/event_repository.dart';
 import 'data/projection/event_projection_processor.dart';
 import 'data/projection/projection_id_generator.dart';
-import 'debug/recorder_debug_screen.dart';
+import 'data/trips/projected_trip_repository.dart';
+import 'ui/rides_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,11 +125,12 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BikeTrack recorder',
-      home: RecorderDebugScreen(
+      title: 'BikeTrack',
+      home: RidesScreen(
         session: _session,
         runtime: _runtime,
-        repository: _repository,
+        trips: ProjectedTripRepository(_database),
+        events: _repository,
         projections: _projections,
         exporter: _exporter,
       ),

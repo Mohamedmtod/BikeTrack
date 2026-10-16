@@ -1,6 +1,6 @@
 # CODEMAP — BikeTrack
 
-lib/main.dart — Flutter application entry point and counter sample widget
+lib/main.dart — Flutter application entry point wiring projected rides home and diagnostics
 lib/domain/domain.dart — Barrel exporting the public domain interface
 lib/domain/activity/activity_classifier.dart — Pure function activity classification from sensor windows
 lib/domain/activity/activity_classifier_config.dart — Weights and trapezoid speed thresholds for ActivityClassifier
@@ -51,7 +51,7 @@ test/fixtures/gps_tunnel_gap.csv — GPS gap replay fixture
 test/fixtures/real_trip_regression_template.csv — Template-format real-trip regression replay fixture
 test/replay/replay_harness.dart — Test-only CSV parser and public-domain input adapters
 test/replay/domain_replay_test.dart — CSV replay tests for GPS and activity golden scenarios
-test/widget_test.dart — Smoke test for default counter widget
+test/widget_test.dart — Recorder, diagnostics, and projected ride UI tests
 test/domain/activity/activity_classifier_config_test.dart — Unit tests for ActivityClassifierConfig assert validation
 test/domain/activity/activity_classifier_test.dart — Unit and property tests for ActivityClassifier
 test/domain/activity/activity_state_config_test.dart — Unit test for ActivityStateConfig assert validation
@@ -101,9 +101,9 @@ probes/ios_autostart/test/fixtures/malformed_lines.jsonl — Malformed JSONL pro
 probes/ios_autostart/test/fixtures/missing_required_fields.jsonl — Missing sequence or uptime probe evidence fixture
 probes/ios_autostart/test/fixtures/empty.jsonl — Empty probe evidence fixture
 pigeons/recorder.dart — Pigeon source contract for the live native recorder bridge
-ios/Runner/Generated/Recorder.g.swift — Generated Swift Pigeon bindings for the recorder contract
+ios/Runner/Generated/Recorder.g.swift — Generated Swift Pigeon bindings for recorder and route map contracts
 ios/Runner/Recorder/RideRecorder.swift — Core Location live raw-fix recorder and Pigeon host implementation
-lib/bridge/generated/recorder.g.dart — Generated Dart Pigeon bindings for the recorder contract
+lib/bridge/generated/recorder.g.dart — Generated Dart Pigeon bindings for recorder and route map contracts
 lib/bridge/recorder_api.dart — Testable Dart interface and Pigeon client for recorder commands
 lib/bridge/recorder_events.dart — Typed bridge events and raw-fix to GpsSample mapping
 lib/bridge/recorder_bridge.dart — Recorder command facade and native callback stream adapter
@@ -139,4 +139,16 @@ test/app/diagnostics_coordinator_test.dart — Narrow best-effort reporting, swa
 test/app/projection_drain_coordinator_test.dart — Automatic, startup, single-flight, failure/retry and restart projection tests
 test/app/recorder_event_ingestion_test.dart — Raw callback mapping, timestamp, ordering, and failure tests
 test/app/recorder_session_test.dart — Manual start/stop intent and native error tests
+lib/data/trips/projected_trip_repository.dart — Transactional projected active, terminal, segment and GPS evidence queries in stable order
+lib/presentation/ride_route.dart — Testable accepted route pieces, on-demand distance and conservative reliability derivation
+lib/ui/ride_map_view.dart — Flutter iOS MapKit PlatformView and typed Pigeon route payload adapter
+lib/ui/ride_display.dart — Ride display configuration, distance and timing labels
+lib/ui/rides_screen.dart — Manual recording home with projected route and navigation
+lib/ui/ride_history_screen.dart — Terminal projected ride history with derived distance and status
+lib/ui/ride_detail_screen.dart — Selected ride map, segments, gap and reliability details
+ios/Runner/AppDelegate.swift — Registers recorder and native MapKit route view with blue separate polylines
+test/helpers/ride_fixture.dart — Shared projected-trip SQLite fixtures for data, presentation and widget tests
+test/data/trips/projected_trip_repository_test.dart — Terminal filtering, insertion ordering and snapshot-selected active ride tests
+test/presentation/ride_route_test.dart — Accepted/rejected, gap/reset and measured/partial/unknown derivation tests
+test/bridge/route_map_test.dart — Pigeon route-piece payload and Dart channel boundary tests
 

@@ -16,6 +16,14 @@ import 'package:biketrack/data/events/event_repository.dart';
 import 'package:biketrack/data/projection/event_projection_processor.dart';
 import 'package:biketrack/data/projection/projection_id_generator.dart';
 import 'package:biketrack/debug/recorder_debug_screen.dart';
+import 'package:biketrack/data/trips/projected_trip_repository.dart';
+import 'package:biketrack/ui/rides_screen.dart';
+import 'package:biketrack/ui/ride_history_screen.dart';
+import 'package:biketrack/domain/trip/trip_status.dart';
+import 'package:biketrack/domain/trip/segment_type.dart';
+
+import 'helpers/ride_fixture.dart';
+
 import 'package:biketrack/domain/shared/event_source.dart';
 import 'package:biketrack/main.dart' show disposeRecorderResources;
 import 'package:drift/native.dart';
@@ -427,4 +435,115 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets('home shows only projected GPS, then updates after drain', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    final events = EventRepository(database);
+    final bridge = RecorderBridge(nativeApi: FakeNativeRecorderApi());
+    final runtime = RecorderRuntime();
+    final projections = ProjectionDrainCoordinator(
+      EventProjectionProcessor(database, _Ids()),
+      events,
+      runtime,
+    );
+    final session = RecorderSession(
+      bridge,
+      RawEventWriter(events, onPersisted: projections.scheduleAutomatic),
+      runtime,
+      () => 1000,
+    );
+    addTearDown(() async {
+      await projections.drained;
+      await bridge.dispose();
+      await database.close();
+      runtime.dispose();
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RidesScreen(
+          session: session,
+          runtime: runtime,
+          trips: ProjectedTripRepository(database),
+          events: events,
+          projections: projections,
+          exporter: _StubExporter(database, runtime),
+          clock: () => DateTime.fromMillisecondsSinceEpoch(12000),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Start Ride'), findsOneWidget);
+    expect(find.text('Distance unknown'), findsOneWidget);
+    await tester.tap(find.text('Start Ride'));
+    await projections.drained;
+    await tester.pumpAndSettle();
+    expect(find.text('Stop Ride'), findsOneWidget);
+    expect(find.text('Distance unknown'), findsOneWidget);
+    await events.append(
+      const NewEvent(
+        tsUtc: 1000,
+        source: EventSource.gps,
+        type: 'location',
+        payloadJson: '{"latitudeDeg":0.0,"longitudeDeg":0.0,"fixTsMs":1000,"hAccuracyM":1.0,"recvMs":1000}',
+      ),
+    );
+    await events.append(
+      const NewEvent(
+        tsUtc: 11000,
+        source: EventSource.gps,
+        type: 'location',
+        payloadJson: '{"latitudeDeg":0.001,"longitudeDeg":0.0,"fixTsMs":11000,"hAccuracyM":1.0,"recvMs":11000}',
+      ),
+    );
+    runtime.callbackPersisted();
+    await tester.pumpAndSettle();
+    expect(find.text('Distance unknown'), findsOneWidget);
+    projections.scheduleAutomatic();
+    await projections.drained;
+    await tester.pumpAndSettle();
+    expect(find.text('0.11 km (measured)'), findsOneWidget);
+    expect(find.text('Reliability: measured'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('history and detail show derived distance, reliability and gap', (
+    tester,
+  ) async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(() => db.close());
+    await seedTrip(
+      db,
+      'ride',
+      status: TripStatus.needsReview,
+      start: 1000,
+      end: 5000,
+    );
+    await seedSegment(db, 'first', 'ride', start: 1000, end: 2000);
+    await seedSegment(
+      db,
+      'gap',
+      'ride',
+      type: SegmentType.gap,
+      start: 2000,
+      end: 5000,
+    );
+    await seedPoint(db, 1, 'first', reason: 'anchorReset');
+    await seedPoint(db, 2, 'first', lat: 0.001);
+    await tester.pumpWidget(
+      MaterialApp(home: RideHistoryScreen(trips: ProjectedTripRepository(db))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0.11 km (partial)'), findsOneWidget);
+    expect(find.textContaining('Reliability: partial'), findsOneWidget);
+    await tester.tap(find.byType(ListTile).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Ride detail'), findsOneWidget);
+    expect(find.text('Status: needsReview'), findsOneWidget);
+    expect(find.text('0.11 km (partial)'), findsOneWidget);
+    expect(find.text('Reliability: partial'), findsOneWidget);
+    expect(find.text('GPS gap'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

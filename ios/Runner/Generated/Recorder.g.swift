@@ -130,6 +130,7 @@ func deepHashRecorder(value: Any?, hasher: inout Hasher) {
   return hasher.combine(String(describing: value))
 }
 
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct RecorderStartResult: Hashable {
   var started: Bool
@@ -328,6 +329,60 @@ struct RecorderLocationError: Hashable {
   }
 }
 
+/// Generated class from Pigeon that represents data sent in messages.
+struct MapCoordinate: Hashable {
+  var latitudeDeg: Double
+  var longitudeDeg: Double
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> MapCoordinate? {
+    let latitudeDeg = pigeonVar_list[0] as! Double
+    let longitudeDeg = pigeonVar_list[1] as! Double
+
+    return MapCoordinate(
+      latitudeDeg: latitudeDeg,
+      longitudeDeg: longitudeDeg
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      latitudeDeg,
+      longitudeDeg,
+    ]
+  }
+  static func == (lhs: MapCoordinate, rhs: MapCoordinate) -> Bool {
+    return deepEqualsRecorder(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashRecorder(value: toList(), hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct MapRoutePiece: Hashable {
+  var points: [MapCoordinate]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> MapRoutePiece? {
+    let points = pigeonVar_list[0] as! [MapCoordinate]
+
+    return MapRoutePiece(
+      points: points
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      points
+    ]
+  }
+  static func == (lhs: MapRoutePiece, rhs: MapRoutePiece) -> Bool {
+    return deepEqualsRecorder(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashRecorder(value: toList(), hasher: &hasher)
+  }
+}
+
 private class RecorderPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -343,6 +398,10 @@ private class RecorderPigeonCodecReader: FlutterStandardReader {
       return RecorderAuthorizationChange.fromList(self.readValue() as! [Any?])
     case 134:
       return RecorderLocationError.fromList(self.readValue() as! [Any?])
+    case 135:
+      return MapCoordinate.fromList(self.readValue() as! [Any?])
+    case 136:
+      return MapRoutePiece.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -369,6 +428,12 @@ private class RecorderPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? RecorderLocationError {
       super.writeByte(134)
       super.writeValue(value.toList())
+    } else if let value = value as? MapCoordinate {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? MapRoutePiece {
+      super.writeByte(136)
+      super.writeValue(value.toList())
     } else {
       super.writeValue(value)
     }
@@ -389,6 +454,35 @@ class RecorderPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
   static let shared = RecorderPigeonCodec(readerWriter: RecorderPigeonCodecReaderWriter())
 }
 
+/// Generated protocol from Pigeon that represents a handler of messages from Flutter.
+protocol RouteMapHostApi {
+  func updateRoute(viewId: Int64, pieces: [MapRoutePiece]) throws
+}
+
+/// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
+class RouteMapHostApiSetup {
+  static var codec: FlutterStandardMessageCodec { RecorderPigeonCodec.shared }
+  /// Sets up an instance of `RouteMapHostApi` to handle messages through the `binaryMessenger`.
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: RouteMapHostApi?, messageChannelSuffix: String = "") {
+    let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+    let updateRouteChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.biketrack.RouteMapHostApi.updateRoute\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateRouteChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let viewIdArg = args[0] as! Int64
+        let piecesArg = args[1] as! [MapRoutePiece]
+        do {
+          try api.updateRoute(viewId: viewIdArg, pieces: piecesArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      updateRouteChannel.setMessageHandler(nil)
+    }
+  }
+}
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol RecorderHostApi {
   func start(trigger: String, attemptId: String) throws -> RecorderStartResult

@@ -20,6 +20,19 @@ Reviewer: <other agent or owner>
 
 ---
 
+### T-020 — Live rides, routes, and derived distance UI
+Owner: Claude Code CLI
+Status: in-progress
+Branch: task/T-020-live-rides-ui
+Plan refs: D-033–D-036, §5.2–§5.4, §6.4, §7.1–§7.2
+Goal: Personal manual ride home, projected live MapKit route, derived reliable distances, terminal ride history and detail; debug/export remains accessible.
+Allowed files: `lib/main.dart`, `lib/app/{recorder_runtime.dart,recorder_session.dart,projection_drain_coordinator.dart}`, `lib/bridge/{recorder_api.dart,recorder_bridge.dart,generated/recorder.g.dart}`, `lib/data/database/{app_database.dart,app_database.g.dart}`, `lib/data/events/event_repository.dart`, `lib/data/projection/projection_state_repository.dart`, `lib/data/trips/**`, `lib/presentation/**`, `lib/ui/**`, `lib/debug/recorder_debug_screen.dart`, `pigeons/recorder.dart`, `ios/Runner/{AppDelegate.swift,Generated/Recorder.g.swift,Recorder/**}`, `test/bridge/**`, `test/data/trips/**`, `test/presentation/**`, `test/widget_test.dart`, `test/app/recorder_test_fakes.dart`, `test/helpers/**` (only shared route fixtures), `docs/{CODEMAP.md,STATUS.md,TASKS.md,DECISIONS.md}`.
+Forbidden: everything else; no new dependencies, schema, source-event, recorder or diagnostic behavior changes, or edits to Xcode project files.
+Steps: Query projected trip evidence by insertion order; derive gap-safe route/distance/reliability; add typed native MapKit view contract and embedding; implement home, history and detail with debug navigation; test and validate once, review diff, commit and push branch only.
+Tests required: ordering/filtering, accepted/rejected handling, segment/reset/gap separation and distance, measured/partial/unknown, zero evidence, live projected-only refresh, history/detail, Dart Pigeon mapping, existing regression suite; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: Native blue route and fit/default camera; projected evidence only; no bridged gaps or fabricated distance; all three screens usable and debug/export reachable; generated bindings committed; Windows validation green, native compile/device deferred to owner.
+Reviewer: Owner
+
 ### T-019 — Durable diagnostics and local export
 Owner: Claude Code CLI
 Status: review

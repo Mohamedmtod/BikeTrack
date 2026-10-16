@@ -1,6 +1,5 @@
 # STATUS — BikeTrack
 
-- T-019 implements D-035: schema v3 adds bounded best-effort diagnostic failures without pruning raw evidence or projections.
-- Manual debug export writes a size-checked JSON bundle into iOS Documents through the approved Pigeon path and displays the exact privacy warning.
-- `dart format .` clean, `flutter analyze` clean, `flutter test` passed (210 tests); generated Dart/Swift bindings updated.
-- Swift compilation and iPhone Files visibility remain unverified on Windows and require owner verification.
+- T-020 implements D-036 on its task branch: recording home, accepted projected blue MapKit routes, derived distance/reliability, and terminal ride history/detail.
+- Route pieces disconnect at gaps and anchor resets; debug retry and local diagnostic export remain reachable.
+- `dart format .` clean, `flutter analyze` clean, `flutter test` passed (222 tests); native Swift MapKit compilation and iPhone behavior require owner verification.

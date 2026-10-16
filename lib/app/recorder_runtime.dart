@@ -17,6 +17,7 @@ class RecorderRuntime extends ChangeNotifier {
   String? latestNativeError;
   int persistedCallbackCount = 0;
   ProjectionDrainState projectionState = ProjectionDrainState.idle;
+  int projectionRevision = 0;
   StoredEvent? blockingProjectionEvent;
   String? latestProjectionError;
 
@@ -29,6 +30,7 @@ class RecorderRuntime extends ChangeNotifier {
 
   void projectionCompleted() {
     projectionState = ProjectionDrainState.idle;
+    projectionRevision++;
     notifyListeners();
   }
 

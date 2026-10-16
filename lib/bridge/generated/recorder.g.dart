@@ -326,6 +326,83 @@ class RecorderLocationError {
   int get hashCode => Object.hashAll(_toList());
 }
 
+class MapCoordinate {
+  MapCoordinate({required this.latitudeDeg, required this.longitudeDeg});
+
+  double latitudeDeg;
+
+  double longitudeDeg;
+
+  List<Object?> _toList() {
+    return <Object?>[latitudeDeg, longitudeDeg];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static MapCoordinate decode(Object result) {
+    result as List<Object?>;
+    return MapCoordinate(
+      latitudeDeg: result[0]! as double,
+      longitudeDeg: result[1]! as double,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MapCoordinate || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList());
+}
+
+class MapRoutePiece {
+  MapRoutePiece({required this.points});
+
+  List<MapCoordinate> points;
+
+  List<Object?> _toList() {
+    return <Object?>[points];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static MapRoutePiece decode(Object result) {
+    result as List<Object?>;
+    return MapRoutePiece(
+      points: (result[0] as List<Object?>?)!.cast<MapCoordinate>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! MapRoutePiece || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(encode(), other.encode());
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => Object.hashAll(_toList());
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -351,6 +428,12 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is RecorderLocationError) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
+    } else if (value is MapCoordinate) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    } else if (value is MapRoutePiece) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -371,8 +454,57 @@ class _PigeonCodec extends StandardMessageCodec {
         return RecorderAuthorizationChange.decode(readValue(buffer)!);
       case 134:
         return RecorderLocationError.decode(readValue(buffer)!);
+      case 135:
+        return MapCoordinate.decode(readValue(buffer)!);
+      case 136:
+        return MapRoutePiece.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
+    }
+  }
+}
+
+class RouteMapHostApi {
+  /// Constructor for [RouteMapHostApi].  The [binaryMessenger] named argument is
+  /// available for dependency injection.  If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  RouteMapHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  Future<void> updateRoute(int viewId, List<MapRoutePiece> pieces) async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.biketrack.RouteMapHostApi.updateRoute$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[viewId, pieces],
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_sendFuture as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
     }
   }
 }
