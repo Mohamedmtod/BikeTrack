@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:biketrack/app/projection_drain_coordinator.dart';
+import 'package:biketrack/app/recorder_event_ingestion.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/app/recorder_session.dart';
+import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
 import 'package:biketrack/bridge/recorder_bridge.dart';
 import 'package:biketrack/data/database/app_database.dart';
 import 'package:biketrack/data/events/event_record.dart';
@@ -10,6 +14,7 @@ import 'package:biketrack/data/projection/event_projection_processor.dart';
 import 'package:biketrack/data/projection/projection_id_generator.dart';
 import 'package:biketrack/debug/recorder_debug_screen.dart';
 import 'package:biketrack/domain/shared/event_source.dart';
+import 'package:biketrack/main.dart' show disposeRecorderResources;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,6 +43,75 @@ class _FailOnceProcessor implements ProjectionProcessor {
 }
 
 void main() {
+  test(
+    'resource disposal waits for native start and its durable confirmation',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final repository = FakeEventRepository(database);
+      final native = PendingNativeRecorderApi();
+      final bridge = RecorderBridge(nativeApi: native);
+      final runtime = RecorderRuntime();
+      final projections = ProjectionDrainCoordinator(
+        EventProjectionProcessor(database, _Ids()),
+        repository,
+        runtime,
+      );
+      final writer = RawEventWriter(
+        repository,
+        onPersisted: projections.scheduleAutomatic,
+      );
+      final ingestion = RecorderEventIngestion(
+        bridge,
+        writer,
+        runtime,
+        () => 1000,
+      );
+      final session = RecorderSession(bridge, writer, runtime, () => 1000);
+      final nativeStart = Completer<pigeon.RecorderStartResult>();
+      final writingConfirmation = Completer<void>();
+      final persistConfirmation = Completer<void>();
+      final confirmationPersisted = Completer<void>();
+      native.startCompletion = nativeStart;
+      repository.onAppend = (event) async {
+        if (event.type == 'recorder_start_confirmed') {
+          writingConfirmation.complete();
+          await persistConfirmation.future;
+          final id = await FakeEventRepository(database).append(event);
+          expect((await repository.readRecent(1)).single.type, event.type);
+          confirmationPersisted.complete();
+          return id;
+        }
+        return FakeEventRepository(database).append(event);
+      };
+
+      final started = session.startManual('dispose-pending');
+      await native.startCalled.future;
+      var disposed = false;
+      final disposal = disposeRecorderResources(
+        ingestion: ingestion,
+        session: session,
+        writer: writer,
+        projections: projections,
+        bridge: bridge,
+        database: database,
+        runtime: runtime,
+      ).then((_) => disposed = true);
+      expect(disposed, isFalse);
+      nativeStart.complete(
+        pigeon.RecorderStartResult(started: true, rideId: 'ride-1'),
+      );
+      await writingConfirmation.future;
+      expect(disposed, isFalse);
+      expect((await repository.readRecent(10)).single.type, 'user_start');
+      persistConfirmation.complete();
+      await confirmationPersisted.future;
+      expect((await started).started, isTrue);
+      await disposal;
+      expect(disposed, isTrue);
+      expect(native.calls, ['start:user:dispose-pending']);
+    },
+  );
+
   testWidgets(
     'debug console displays status, errors, recent events and manual controls',
     (tester) async {

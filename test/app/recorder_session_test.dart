@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:biketrack/app/projection_drain_coordinator.dart';
@@ -26,7 +27,7 @@ class _FailingIds implements ProjectionIdGenerator {
 void main() {
   late AppDatabase database;
   late FakeEventRepository repository;
-  late FakeNativeRecorderApi native;
+  late PendingNativeRecorderApi native;
   late RecorderBridge bridge;
   late RecorderRuntime runtime;
   late RecorderSession session;
@@ -34,7 +35,7 @@ void main() {
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
     repository = FakeEventRepository(database);
-    native = FakeNativeRecorderApi();
+    native = PendingNativeRecorderApi();
     bridge = RecorderBridge(nativeApi: native);
     runtime = RecorderRuntime();
     session = RecorderSession(
@@ -219,4 +220,107 @@ void main() {
     expect(runtime.latestNativeError, contains('native stop failed'));
     expect(runtime.activity, RecorderActivity.stopping);
   });
+
+  test(
+    'drained waits for native start and confirmed event persistence',
+    () async {
+      final nativeStart = Completer<pigeon.RecorderStartResult>();
+      final writingConfirmation = Completer<void>();
+      final persistConfirmation = Completer<void>();
+      native.startCompletion = nativeStart;
+      repository.onAppend = (event) async {
+        if (event.type == 'recorder_start_confirmed') {
+          writingConfirmation.complete();
+          await persistConfirmation.future;
+        }
+        return FakeEventRepository(database).append(event);
+      };
+
+      final started = session.startManual('pending');
+      await native.startCalled.future;
+      var disposed = false;
+      final disposalBarrier = session.drained.then((_) => disposed = true);
+      expect(disposed, isFalse);
+
+      nativeStart.complete(
+        pigeon.RecorderStartResult(started: true, rideId: 'ride-1'),
+      );
+      await writingConfirmation.future;
+      expect(disposed, isFalse);
+      persistConfirmation.complete();
+      expect((await started).started, isTrue);
+      await disposalBarrier;
+      expect(disposed, isTrue);
+      expect((await repository.readRecent(10)).map((event) => event.type), [
+        'recorder_start_confirmed',
+        'user_start',
+      ]);
+    },
+  );
+
+  test('drained waits for rejected start failure event persistence', () async {
+    final nativeStart = Completer<pigeon.RecorderStartResult>();
+    final writingFailure = Completer<void>();
+    final persistFailure = Completer<void>();
+    native.startCompletion = nativeStart;
+    repository.onAppend = (event) async {
+      if (event.type == 'recorder_start_failed') {
+        writingFailure.complete();
+        await persistFailure.future;
+      }
+      return FakeEventRepository(database).append(event);
+    };
+
+    final started = session.startManual('rejected');
+    await native.startCalled.future;
+    var disposed = false;
+    final disposalBarrier = session.drained.then((_) => disposed = true);
+    nativeStart.complete(
+      pigeon.RecorderStartResult(started: false, reason: 'denied'),
+    );
+    await writingFailure.future;
+    expect(disposed, isFalse);
+    persistFailure.complete();
+    expect((await started).started, isFalse);
+    await disposalBarrier;
+    expect(disposed, isTrue);
+    expect((await repository.readRecent(10)).map((event) => event.type), [
+      'recorder_start_failed',
+      'user_start',
+    ]);
+  });
+
+  test('drained includes pending native stop', () async {
+    final nativeStop = Completer<void>();
+    native.stopCompletion = nativeStop;
+    final stopped = session.stopManual();
+    await native.stopCalled.future;
+    var disposed = false;
+    final disposalBarrier = session.drained.then((_) => disposed = true);
+    expect(disposed, isFalse);
+    expect((await repository.readRecent(10)).single.type, 'user_stop');
+    nativeStop.complete();
+    await stopped;
+    await disposalBarrier;
+    expect(disposed, isTrue);
+  });
+
+  test(
+    'a throwing operation keeps its caller error but not the barrier',
+    () async {
+      final nativeStart = Completer<pigeon.RecorderStartResult>();
+      native.startCompletion = nativeStart;
+      final started = session.startManual('throws');
+      final caller = expectLater(started, throwsStateError);
+      await native.startCalled.future;
+      final disposalBarrier = session.drained;
+      nativeStart.completeError(StateError('native start failed'));
+      await caller;
+      await disposalBarrier;
+      await session.stopManual();
+      await session.drained;
+      expect(native.calls, ['start:user:throws', 'stop']);
+      expect(runtime.latestNativeError, contains('native start failed'));
+    },
+  );
 }

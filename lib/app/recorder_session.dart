@@ -14,8 +14,24 @@ class RecorderSession {
   final RawEventWriter _writer;
   final RecorderRuntime _runtime;
   final int Function() _clockMs;
+  Future<void> _pending = Future<void>.value();
 
-  Future<RecorderStart> startManual(String attemptId) async {
+  Future<void> get drained => _pending;
+
+  void _track(Future<dynamic> operation) {
+    _pending = Future.wait<void>([
+      _pending,
+      operation.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+    ]);
+  }
+
+  Future<RecorderStart> startManual(String attemptId) {
+    final operation = _startManual(attemptId);
+    _track(operation);
+    return operation;
+  }
+
+  Future<RecorderStart> _startManual(String attemptId) async {
     try {
       await _writer.append(
         NewEvent(
@@ -82,7 +98,13 @@ class RecorderSession {
     }
   }
 
-  Future<void> stopManual() async {
+  Future<void> stopManual() {
+    final operation = _stopManual();
+    _track(operation);
+    return operation;
+  }
+
+  Future<void> _stopManual() async {
     Object? writeError;
     StackTrace? writeStack;
     try {

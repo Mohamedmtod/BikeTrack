@@ -19,6 +19,24 @@ void main() {
   runApp(const BikeTrackApp());
 }
 
+Future<void> disposeRecorderResources({
+  required RecorderEventIngestion ingestion,
+  required RecorderSession session,
+  required RawEventWriter writer,
+  required ProjectionDrainCoordinator projections,
+  required RecorderBridge bridge,
+  required AppDatabase database,
+  required RecorderRuntime runtime,
+}) async {
+  await ingestion.dispose();
+  await session.drained;
+  await writer.drained;
+  await projections.drained;
+  await bridge.dispose();
+  await database.close();
+  runtime.dispose();
+}
+
 class BikeTrackApp extends StatefulWidget {
   const BikeTrackApp({super.key});
 
@@ -59,14 +77,15 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     _projections.scheduleAutomatic();
   }
 
-  Future<void> _disposeResources() async {
-    await _ingestion.dispose();
-    await _writer.drained;
-    await _projections.drained;
-    await _bridge.dispose();
-    await _database.close();
-    _runtime.dispose();
-  }
+  Future<void> _disposeResources() => disposeRecorderResources(
+    ingestion: _ingestion,
+    session: _session,
+    writer: _writer,
+    projections: _projections,
+    bridge: _bridge,
+    database: _database,
+    runtime: _runtime,
+  );
 
   @override
   void dispose() {
