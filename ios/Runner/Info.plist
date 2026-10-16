@@ -30,6 +30,10 @@
 	<string>BikeTrack uses your location to record active rides in the background.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BikeTrack uses your location to record active rides.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

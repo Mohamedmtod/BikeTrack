@@ -62,6 +62,11 @@ final class RideRecorder: NSObject, CLLocationManagerDelegate, RecorderHostApi {
     manager.requestWhenInUseAuthorization()
   }
 
+  func documentsDirectoryPath() throws -> String {
+    try FileManager.default.url(for: .documentDirectory, in: .userDomainMask,
+                                appropriateFor: nil, create: true).path
+  }
+
   func requestAlways() throws {
     manager.requestAlwaysAuthorization()
   }

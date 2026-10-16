@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:biketrack/app/diagnostics_coordinator.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_repository.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_event_ingestion.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
@@ -20,6 +22,8 @@ void main() {
   late RecorderBridge bridge;
   late RecorderRuntime runtime;
   late RecorderEventIngestion ingestion;
+  late DiagnosticsCoordinator diagnostics;
+  late DiagnosticRepository diagnosticRepository;
   var clock = 100;
 
   setUp(() {
@@ -27,16 +31,22 @@ void main() {
     database = AppDatabase(NativeDatabase.memory());
     repository = FakeEventRepository(database);
     bridge = RecorderBridge(nativeApi: FakeNativeRecorderApi());
-    runtime = RecorderRuntime();
+    diagnosticRepository = DiagnosticRepository(database);
+    diagnostics = DiagnosticsCoordinator(
+      diagnosticRepository,
+      clockMs: () => clock,
+    );
+    runtime = RecorderRuntime(diagnostics: diagnostics);
     ingestion = RecorderEventIngestion(
       bridge,
-      RawEventWriter(repository),
+      RawEventWriter(repository, diagnostics: diagnostics),
       runtime,
       () => clock++,
     );
   });
   tearDown(() async {
     await ingestion.dispose();
+    await diagnostics.drained;
     await bridge.dispose();
     await database.close();
     runtime.dispose();
@@ -127,6 +137,11 @@ void main() {
       expect(runtime.activity, RecorderActivity.idle);
       expect(runtime.latestNativeError, contains('Network unavailable'));
       expect(runtime.persistedCallbackCount, 4);
+      await diagnostics.drained;
+      final entries = await diagnosticRepository.readAll();
+      expect(entries.map((entry) => '${entry.category}:${entry.operation}'), [
+        'native_recorder:location error network',
+      ]);
     },
   );
 
@@ -195,6 +210,11 @@ void main() {
       expect(stored.map((e) => e.type), ['location_authorization_changed']);
       expect(runtime.latestPersistenceError, contains('disk full'));
       expect(runtime.persistedCallbackCount, 1);
+      await diagnostics.drained;
+      final entries = await diagnosticRepository.readAll();
+      expect(entries.map((entry) => '${entry.category}:${entry.operation}'), [
+        'raw_event_write:location',
+      ]);
     },
   );
 }

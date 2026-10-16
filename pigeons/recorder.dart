@@ -54,6 +54,8 @@ abstract class RecorderHostApi {
 
   void requestWhenInUse();
 
+  String documentsDirectoryPath();
+
   void requestAlways();
 }
 

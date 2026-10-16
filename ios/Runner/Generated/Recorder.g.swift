@@ -395,6 +395,7 @@ protocol RecorderHostApi {
   func stop() throws
   func status() throws -> RecorderStatus
   func requestWhenInUse() throws
+  func documentsDirectoryPath() throws -> String
   func requestAlways() throws
 }
 
@@ -458,6 +459,19 @@ class RecorderHostApiSetup {
       }
     } else {
       requestWhenInUseChannel.setMessageHandler(nil)
+    }
+    let documentsDirectoryPathChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.biketrack.RecorderHostApi.documentsDirectoryPath\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      documentsDirectoryPathChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.documentsDirectoryPath()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      documentsDirectoryPathChannel.setMessageHandler(nil)
     }
     let requestAlwaysChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.biketrack.RecorderHostApi.requestAlways\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

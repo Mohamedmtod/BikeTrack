@@ -19,6 +19,7 @@ part 'app_database.g.dart';
     Bikes,
     Config,
     ProjectionStates,
+    DiagnosticEntries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -26,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'biketrack'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +45,7 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX segments_trip_id ON segments (trip_id)',
       );
       await customStatement('CREATE INDEX trips_status ON trips (status)');
+      await _createDiagnosticIndexes();
 
       // Guard the raw event log even when code bypasses the repository.
       await customStatement('''
@@ -108,6 +110,20 @@ class AppDatabase extends _$AppDatabase {
         );
         await migrator.createTable(projectionStates);
       }
+      if (from < 3) {
+        await migrator.createTable(diagnosticEntries);
+        await _createDiagnosticIndexes();
+      }
     },
   );
+
+  Future<void> _createDiagnosticIndexes() async {
+    await customStatement(
+      'CREATE INDEX diagnostic_entries_ts_utc ON diagnostic_entries (ts_utc)',
+    );
+    await customStatement(
+      'CREATE INDEX diagnostic_entries_raw_event_id '
+      'ON diagnostic_entries (raw_event_id)',
+    );
+  }
 }

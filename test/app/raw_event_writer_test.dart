@@ -1,11 +1,27 @@
+import 'dart:async';
+
+import 'package:biketrack/app/diagnostics_coordinator.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/data/database/app_database.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_entry.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_repository.dart';
 import 'package:biketrack/data/events/event_record.dart';
 import 'package:biketrack/domain/shared/event_source.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'recorder_test_fakes.dart';
+
+class _DelayedDiagnostics extends DiagnosticRepository {
+  _DelayedDiagnostics(super.database);
+  final gate = Completer<void>();
+
+  @override
+  Future<int> append(NewDiagnosticEntry entry, {required int nowUtcMs}) async {
+    await gate.future;
+    return super.append(entry, nowUtcMs: nowUtcMs);
+  }
+}
 
 void main() {
   late AppDatabase database;
@@ -127,8 +143,31 @@ void main() {
         payloadJson: '{}',
       ),
     );
-
     expect(calls, 2);
     expect((await repository.readRecent(10)).single.type, 'later');
+  });
+
+  test('every raw append failure is reported centrally without waiting for diagnostics', () async {
+    final delayed = _DelayedDiagnostics(database);
+    final diagnostics = DiagnosticsCoordinator(delayed, clockMs: () => 500);
+    writer = RawEventWriter(repository, diagnostics: diagnostics);
+    final original = StateError('original write failure');
+    repository.onAppend = (_) async => throw original;
+    final operation = writer.append(
+      const NewEvent(
+        tsUtc: 1,
+        source: EventSource.user,
+        type: 'user_start',
+        payloadJson: '{}',
+      ),
+    );
+    await expectLater(operation, throwsA(same(original)));
+    delayed.gate.complete();
+    await diagnostics.drained;
+    final entries = await DiagnosticRepository(database).readAll();
+    expect(entries, hasLength(1));
+    expect(entries.single.operation, 'user_start');
+    expect(entries.single.category, 'raw_event_write');
+    expect(entries.single.rawEventId, isNull);
   });
 }

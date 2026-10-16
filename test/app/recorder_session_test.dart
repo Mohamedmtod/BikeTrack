@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:biketrack/app/diagnostics_coordinator.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_repository.dart';
 import 'package:biketrack/app/projection_drain_coordinator.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
@@ -31,21 +33,29 @@ void main() {
   late RecorderBridge bridge;
   late RecorderRuntime runtime;
   late RecorderSession session;
+  late DiagnosticsCoordinator diagnostics;
+  late DiagnosticRepository diagnosticRepository;
 
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
     repository = FakeEventRepository(database);
     native = PendingNativeRecorderApi();
     bridge = RecorderBridge(nativeApi: native);
-    runtime = RecorderRuntime();
+    diagnosticRepository = DiagnosticRepository(database);
+    diagnostics = DiagnosticsCoordinator(
+      diagnosticRepository,
+      clockMs: () => 98765,
+    );
+    runtime = RecorderRuntime(diagnostics: diagnostics);
     session = RecorderSession(
       bridge,
-      RawEventWriter(repository),
+      RawEventWriter(repository, diagnostics: diagnostics),
       runtime,
       () => 98765,
     );
   });
   tearDown(() async {
+    await diagnostics.drained;
     await bridge.dispose();
     await database.close();
     runtime.dispose();
@@ -220,6 +230,34 @@ void main() {
     expect(runtime.latestNativeError, contains('native stop failed'));
     expect(runtime.activity, RecorderActivity.stopping);
   });
+
+  test(
+    'each native failure and raw write failure records exactly one diagnostic',
+    () async {
+      repository.onAppend = (event) async {
+        if (event.type == 'user_stop') throw StateError('stop write failed');
+        return FakeEventRepository(database).append(event);
+      };
+      native.startError = StateError('start exception');
+      await expectLater(session.startManual('a'), throwsStateError);
+      native.startError = null;
+      native.startResult = pigeon.RecorderStartResult(
+        started: false,
+        reason: 'denied',
+      );
+      expect((await session.startManual('b')).started, isFalse);
+      native.stopError = StateError('stop exception');
+      await expectLater(session.stopManual(), throwsStateError);
+      await diagnostics.drained;
+      final entries = await diagnosticRepository.readAll();
+      expect(entries.map((entry) => '${entry.category}:${entry.operation}'), [
+        'native_recorder:start',
+        'native_recorder:start rejected',
+        'raw_event_write:user_stop',
+        'native_recorder:stop',
+      ]);
+    },
+  );
 
   test(
     'drained waits for native start and confirmed event persistence',

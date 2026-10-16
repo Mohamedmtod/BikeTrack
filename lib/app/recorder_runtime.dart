@@ -1,3 +1,5 @@
+import 'diagnostics_coordinator.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/events/event_record.dart';
@@ -7,6 +9,9 @@ enum RecorderActivity { idle, starting, recording, stopping }
 enum ProjectionDrainState { idle, draining, blocked }
 
 class RecorderRuntime extends ChangeNotifier {
+  RecorderRuntime({this.diagnostics});
+
+  final DiagnosticsCoordinator? diagnostics;
   RecorderActivity activity = RecorderActivity.idle;
   String? latestPersistenceError;
   String? latestNativeError;
@@ -28,6 +33,7 @@ class RecorderRuntime extends ChangeNotifier {
   }
 
   void projectionFailed(StoredEvent? event, Object error) {
+    diagnostics?.projectionFailed(event, error);
     projectionState = ProjectionDrainState.blocked;
     blockingProjectionEvent = event;
     latestProjectionError = '$error';
@@ -45,6 +51,7 @@ class RecorderRuntime extends ChangeNotifier {
   }
 
   void nativeFailed(String operation, Object error) {
+    diagnostics?.nativeFailed(operation, error);
     latestNativeError = '$operation: $error';
     notifyListeners();
   }

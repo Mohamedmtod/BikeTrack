@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:biketrack/app/diagnostics_coordinator.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_repository.dart';
 import 'package:biketrack/app/projection_drain_coordinator.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
@@ -60,6 +62,8 @@ void main() {
   late _Ids ids;
   late ProjectionDrainCoordinator coordinator;
   late RawEventWriter writer;
+  late DiagnosticsCoordinator diagnostics;
+  late DiagnosticRepository diagnosticRepository;
 
   void setupCoordinator({ProjectionProcessor? processor}) {
     coordinator = ProjectionDrainCoordinator(
@@ -67,7 +71,11 @@ void main() {
       events,
       runtime,
     );
-    writer = RawEventWriter(events, onPersisted: coordinator.scheduleAutomatic);
+    writer = RawEventWriter(
+      events,
+      onPersisted: coordinator.scheduleAutomatic,
+      diagnostics: diagnostics,
+    );
   }
 
   Future<int> append(
@@ -86,13 +94,19 @@ void main() {
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
     events = EventRepository(database);
-    runtime = RecorderRuntime();
+    diagnosticRepository = DiagnosticRepository(database);
+    diagnostics = DiagnosticsCoordinator(
+      diagnosticRepository,
+      clockMs: () => 1000,
+    );
+    runtime = RecorderRuntime(diagnostics: diagnostics);
     ids = _Ids();
     setupCoordinator();
   });
   tearDown(() async {
     await writer.drained;
     await coordinator.drained;
+    await diagnostics.drained;
     await database.close();
     runtime.dispose();
   });
@@ -213,6 +227,11 @@ void main() {
     expect(runtime.blockingProjectionEvent?.payloadJson, contains('native'));
     expect(runtime.latestProjectionError, contains('segment unavailable'));
     expect(runtime.latestPersistenceError, isNull);
+    await diagnostics.drained;
+    final reported = await diagnosticRepository.readAll();
+    expect(reported, hasLength(1));
+    expect(reported.single.category, 'projection_drain');
+    expect(reported.single.rawEventId, blockingId);
     expect(await database.select(database.trips).get(), isEmpty);
     expect(await database.select(database.segments).get(), isEmpty);
     expect((await ProjectionStateRepository(database).load()).cursor, 1);
@@ -225,6 +244,8 @@ void main() {
       laterId,
     ]);
     expect(runtime.projectionState, ProjectionDrainState.blocked);
+    await diagnostics.drained;
+    expect(await diagnosticRepository.readAll(), hasLength(1));
 
     ids.failSegment = false;
     await coordinator.retry();
@@ -237,6 +258,31 @@ void main() {
     expect(await database.select(database.segments).get(), hasLength(1));
     await coordinator.retry();
     expect(await database.select(database.trips).get(), hasLength(1));
+    await diagnostics.drained;
+    expect(await diagnosticRepository.readAll(), hasLength(1));
+  });
+
+  test('each failing drain records its first blocker once, not suppressed schedules', () async {
+    ids.failSegment = true;
+    await append('user_start', 1, {'attemptId': 'one'});
+    await coordinator.drained;
+    await append('recorder_start_confirmed', 2, {'attemptId': 'one'});
+    await coordinator.drained;
+    for (var i = 0; i < 3; i++) {
+      await append('later', 3 + i, {});
+      coordinator.scheduleAutomatic();
+    }
+    await coordinator.drained;
+    await diagnostics.drained;
+    expect((await diagnosticRepository.readAll()).map((e) => e.rawEventId), [
+      2,
+    ]);
+    await coordinator.retry();
+    await diagnostics.drained;
+    expect((await diagnosticRepository.readAll()).map((e) => e.rawEventId), [
+      2,
+      2,
+    ]);
   });
 
   test(

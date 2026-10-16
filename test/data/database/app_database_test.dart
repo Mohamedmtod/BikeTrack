@@ -11,12 +11,12 @@ void main() {
   tearDown(() => database.close());
 
   test(
-    'initializes schema version 2 with exactly the planned tables',
+    'initializes schema version 3 with exactly the planned tables',
     () async {
       final version = await database
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(version.read<int>('user_version'), 2);
+      expect(version.read<int>('user_version'), 3);
 
       final tables = await database.customSelect('''
       SELECT name FROM sqlite_master
@@ -27,6 +27,7 @@ void main() {
         'activity_samples',
         'bikes',
         'config',
+        'diagnostic_entries',
         'events',
         'gps_points',
         'projection_states',
@@ -108,6 +109,15 @@ void main() {
       'bikes': ['bike_id', 'name', 'nfc_payload', 'created_at'],
       'config': ['key', 'value'],
       'projection_states': ['id', 'snapshot_json'],
+      'diagnostic_entries': [
+        'id',
+        'ts_utc',
+        'category',
+        'severity',
+        'operation',
+        'raw_event_id',
+        'details',
+      ],
     };
     for (final entry in columns.entries) {
       final rows = await database
@@ -131,6 +141,8 @@ void main() {
           row.read<String>('name'): row.read<String>('tbl_name'),
       },
       {
+        'diagnostic_entries_ts_utc': 'diagnostic_entries',
+        'diagnostic_entries_raw_event_id': 'diagnostic_entries',
         'events_ts_utc': 'events',
         'events_processed': 'events',
         'gps_points_segment_id_ts_utc': 'gps_points',
@@ -139,6 +151,8 @@ void main() {
       },
     );
     for (final (name, expected) in [
+      ('diagnostic_entries_ts_utc', ['ts_utc']),
+      ('diagnostic_entries_raw_event_id', ['raw_event_id']),
       ('events_ts_utc', ['ts_utc']),
       ('events_processed', ['processed']),
       ('gps_points_segment_id_ts_utc', ['segment_id', 'ts_utc']),
@@ -157,6 +171,7 @@ void main() {
     () async {
       for (final (table, nullable) in [
         ('events', ['trip_id']),
+        ('diagnostic_entries', ['raw_event_id']),
         (
           'trips',
           [
@@ -250,6 +265,7 @@ void main() {
         ) VALUES (7, 'segment-v1', 11, 30.0, 31.0, 9.0, 4.0, 5.0, 6.0, 7.0,
           8.0, 1, NULL)
       ''');
+        await v2.customStatement('DROP TABLE diagnostic_entries');
         await v2.customStatement('DROP TABLE projection_states');
         await v2.customStatement('DROP INDEX gps_points_segment_id_ts_utc');
         await v2.customStatement(
@@ -287,7 +303,7 @@ void main() {
           expect(
             (await migrated.customSelect('PRAGMA user_version').getSingle())
                 .read<int>('user_version'),
-            2,
+            3,
           );
           final event = await migrated
               .customSelect('SELECT * FROM events')
@@ -316,6 +332,88 @@ void main() {
     },
   );
 
+  test(
+    'v2 to v3 migration preserves events, projections, trips, segments and GPS',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('biketrack-v2-');
+      final file = File('${directory.path}/events.sqlite');
+      try {
+        final old = AppDatabase(NativeDatabase(file));
+        await old.customSelect('SELECT * FROM events').get();
+        await old.customInsert('''
+        INSERT INTO trips (
+          trip_id, status, start_time_utc, nfc_confirmed, distance_status,
+          moving_duration_s, paused_duration_s, suspended_duration_s,
+          created_at, updated_at
+        ) VALUES ('trip-v2', 'active', 1, 0, 'unknown', 0, 0, 0, 1, 1)
+      ''');
+        await old.customInsert('''
+        INSERT INTO segments (
+          segment_id, trip_id, type, start_utc, end_utc, distance_status,
+          moving_s, confidence, classification_source, user_corrected, needs_review
+        ) VALUES ('segment-v2', 'trip-v2', 'cycling', 1, 1, 'unknown', 0, 1, 'user', 0, 0)
+      ''');
+        await old.customInsert('''
+        INSERT INTO gps_points (id, segment_id, ts_utc, lat, lon,
+          h_accuracy_m, accepted)
+        VALUES (7, 'segment-v2', 2, 30, 31, 4, 1)
+      ''');
+        await old.customInsert('''
+        INSERT INTO events (ts_utc, source, type, payload, processed)
+        VALUES (2, 'system', 'v2', '{"exact": true}', 0)
+      ''');
+        await old.customInsert('''
+        INSERT INTO projection_states (id, snapshot_json) VALUES (1, '{"cursor":7}')
+      ''');
+        await old.customStatement('DROP TABLE diagnostic_entries');
+        await old.customStatement('PRAGMA user_version = 2');
+        await old.close();
+
+        final upgraded = AppDatabase(NativeDatabase(file));
+        try {
+          expect(
+            (await upgraded.customSelect('PRAGMA user_version').getSingle())
+                .read<int>('user_version'),
+            3,
+          );
+          for (final (table, column, value) in [
+            ('trips', 'trip_id', 'trip-v2'),
+            ('segments', 'segment_id', 'segment-v2'),
+            ('events', 'payload', '{"exact": true}'),
+            ('projection_states', 'snapshot_json', '{"cursor":7}'),
+          ]) {
+            final row = await upgraded
+                .customSelect('SELECT $column FROM $table')
+                .getSingle();
+            expect(row.read<String>(column), value);
+          }
+          final gps = await upgraded
+              .customSelect('SELECT * FROM gps_points')
+              .getSingle();
+          expect(gps.read<int>('id'), 7);
+          expect(gps.readNullable<double>('altitude_m'), isNull);
+          expect(
+            await upgraded.select(upgraded.diagnosticEntries).get(),
+            isEmpty,
+          );
+          final indexes = await upgraded
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'diagnostic_entries_%' ORDER BY name",
+              )
+              .get();
+          expect(indexes.map((row) => row.read<String>('name')), [
+            'diagnostic_entries_raw_event_id',
+            'diagnostic_entries_ts_utc',
+          ]);
+        } finally {
+          await upgraded.close();
+        }
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    },
+  );
+
   test('schema and indexes survive opening a file-backed database', () async {
     final directory = await Directory.systemTemp.createTemp(
       'biketrack-db-test-',
@@ -330,7 +428,7 @@ void main() {
         expect(
           (await reopened.customSelect('PRAGMA user_version').getSingle())
               .read<int>('user_version'),
-          2,
+          3,
         );
         expect(
           await reopened

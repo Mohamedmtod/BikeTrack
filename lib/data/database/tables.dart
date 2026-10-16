@@ -75,6 +75,17 @@ class GpsPoints extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class DiagnosticEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get tsUtc => integer()();
+  TextColumn get category => text()();
+  TextColumn get severity => text()();
+  TextColumn get operation => text()();
+  IntColumn get rawEventId => integer().nullable()();
+  TextColumn get details =>
+      text().customConstraint('NOT NULL CHECK (json_valid(details))')();
+}
+
 class ProjectionStates extends Table {
   IntColumn get id => integer()();
   TextColumn get snapshotJson => text()();

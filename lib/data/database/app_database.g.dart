@@ -4243,6 +4243,465 @@ class ProjectionStatesCompanion extends UpdateCompanion<ProjectionState> {
   }
 }
 
+class $DiagnosticEntriesTable extends DiagnosticEntries
+    with TableInfo<$DiagnosticEntriesTable, DiagnosticEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DiagnosticEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _tsUtcMeta = const VerificationMeta('tsUtc');
+  @override
+  late final GeneratedColumn<int> tsUtc = GeneratedColumn<int>(
+    'ts_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _severityMeta = const VerificationMeta(
+    'severity',
+  );
+  @override
+  late final GeneratedColumn<String> severity = GeneratedColumn<String>(
+    'severity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationMeta = const VerificationMeta(
+    'operation',
+  );
+  @override
+  late final GeneratedColumn<String> operation = GeneratedColumn<String>(
+    'operation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawEventIdMeta = const VerificationMeta(
+    'rawEventId',
+  );
+  @override
+  late final GeneratedColumn<int> rawEventId = GeneratedColumn<int>(
+    'raw_event_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _detailsMeta = const VerificationMeta(
+    'details',
+  );
+  @override
+  late final GeneratedColumn<String> details = GeneratedColumn<String>(
+    'details',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (json_valid(details))',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tsUtc,
+    category,
+    severity,
+    operation,
+    rawEventId,
+    details,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'diagnostic_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DiagnosticEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('ts_utc')) {
+      context.handle(
+        _tsUtcMeta,
+        tsUtc.isAcceptableOrUnknown(data['ts_utc']!, _tsUtcMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tsUtcMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('severity')) {
+      context.handle(
+        _severityMeta,
+        severity.isAcceptableOrUnknown(data['severity']!, _severityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_severityMeta);
+    }
+    if (data.containsKey('operation')) {
+      context.handle(
+        _operationMeta,
+        operation.isAcceptableOrUnknown(data['operation']!, _operationMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operationMeta);
+    }
+    if (data.containsKey('raw_event_id')) {
+      context.handle(
+        _rawEventIdMeta,
+        rawEventId.isAcceptableOrUnknown(
+          data['raw_event_id']!,
+          _rawEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('details')) {
+      context.handle(
+        _detailsMeta,
+        details.isAcceptableOrUnknown(data['details']!, _detailsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_detailsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DiagnosticEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DiagnosticEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      tsUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ts_utc'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      severity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}severity'],
+      )!,
+      operation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation'],
+      )!,
+      rawEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}raw_event_id'],
+      ),
+      details: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}details'],
+      )!,
+    );
+  }
+
+  @override
+  $DiagnosticEntriesTable createAlias(String alias) {
+    return $DiagnosticEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class DiagnosticEntry extends DataClass implements Insertable<DiagnosticEntry> {
+  final int id;
+  final int tsUtc;
+  final String category;
+  final String severity;
+  final String operation;
+  final int? rawEventId;
+  final String details;
+  const DiagnosticEntry({
+    required this.id,
+    required this.tsUtc,
+    required this.category,
+    required this.severity,
+    required this.operation,
+    this.rawEventId,
+    required this.details,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['ts_utc'] = Variable<int>(tsUtc);
+    map['category'] = Variable<String>(category);
+    map['severity'] = Variable<String>(severity);
+    map['operation'] = Variable<String>(operation);
+    if (!nullToAbsent || rawEventId != null) {
+      map['raw_event_id'] = Variable<int>(rawEventId);
+    }
+    map['details'] = Variable<String>(details);
+    return map;
+  }
+
+  DiagnosticEntriesCompanion toCompanion(bool nullToAbsent) {
+    return DiagnosticEntriesCompanion(
+      id: Value(id),
+      tsUtc: Value(tsUtc),
+      category: Value(category),
+      severity: Value(severity),
+      operation: Value(operation),
+      rawEventId: rawEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rawEventId),
+      details: Value(details),
+    );
+  }
+
+  factory DiagnosticEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DiagnosticEntry(
+      id: serializer.fromJson<int>(json['id']),
+      tsUtc: serializer.fromJson<int>(json['tsUtc']),
+      category: serializer.fromJson<String>(json['category']),
+      severity: serializer.fromJson<String>(json['severity']),
+      operation: serializer.fromJson<String>(json['operation']),
+      rawEventId: serializer.fromJson<int?>(json['rawEventId']),
+      details: serializer.fromJson<String>(json['details']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tsUtc': serializer.toJson<int>(tsUtc),
+      'category': serializer.toJson<String>(category),
+      'severity': serializer.toJson<String>(severity),
+      'operation': serializer.toJson<String>(operation),
+      'rawEventId': serializer.toJson<int?>(rawEventId),
+      'details': serializer.toJson<String>(details),
+    };
+  }
+
+  DiagnosticEntry copyWith({
+    int? id,
+    int? tsUtc,
+    String? category,
+    String? severity,
+    String? operation,
+    Value<int?> rawEventId = const Value.absent(),
+    String? details,
+  }) => DiagnosticEntry(
+    id: id ?? this.id,
+    tsUtc: tsUtc ?? this.tsUtc,
+    category: category ?? this.category,
+    severity: severity ?? this.severity,
+    operation: operation ?? this.operation,
+    rawEventId: rawEventId.present ? rawEventId.value : this.rawEventId,
+    details: details ?? this.details,
+  );
+  DiagnosticEntry copyWithCompanion(DiagnosticEntriesCompanion data) {
+    return DiagnosticEntry(
+      id: data.id.present ? data.id.value : this.id,
+      tsUtc: data.tsUtc.present ? data.tsUtc.value : this.tsUtc,
+      category: data.category.present ? data.category.value : this.category,
+      severity: data.severity.present ? data.severity.value : this.severity,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      rawEventId: data.rawEventId.present
+          ? data.rawEventId.value
+          : this.rawEventId,
+      details: data.details.present ? data.details.value : this.details,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DiagnosticEntry(')
+          ..write('id: $id, ')
+          ..write('tsUtc: $tsUtc, ')
+          ..write('category: $category, ')
+          ..write('severity: $severity, ')
+          ..write('operation: $operation, ')
+          ..write('rawEventId: $rawEventId, ')
+          ..write('details: $details')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    tsUtc,
+    category,
+    severity,
+    operation,
+    rawEventId,
+    details,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DiagnosticEntry &&
+          other.id == this.id &&
+          other.tsUtc == this.tsUtc &&
+          other.category == this.category &&
+          other.severity == this.severity &&
+          other.operation == this.operation &&
+          other.rawEventId == this.rawEventId &&
+          other.details == this.details);
+}
+
+class DiagnosticEntriesCompanion extends UpdateCompanion<DiagnosticEntry> {
+  final Value<int> id;
+  final Value<int> tsUtc;
+  final Value<String> category;
+  final Value<String> severity;
+  final Value<String> operation;
+  final Value<int?> rawEventId;
+  final Value<String> details;
+  const DiagnosticEntriesCompanion({
+    this.id = const Value.absent(),
+    this.tsUtc = const Value.absent(),
+    this.category = const Value.absent(),
+    this.severity = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.rawEventId = const Value.absent(),
+    this.details = const Value.absent(),
+  });
+  DiagnosticEntriesCompanion.insert({
+    this.id = const Value.absent(),
+    required int tsUtc,
+    required String category,
+    required String severity,
+    required String operation,
+    this.rawEventId = const Value.absent(),
+    required String details,
+  }) : tsUtc = Value(tsUtc),
+       category = Value(category),
+       severity = Value(severity),
+       operation = Value(operation),
+       details = Value(details);
+  static Insertable<DiagnosticEntry> custom({
+    Expression<int>? id,
+    Expression<int>? tsUtc,
+    Expression<String>? category,
+    Expression<String>? severity,
+    Expression<String>? operation,
+    Expression<int>? rawEventId,
+    Expression<String>? details,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tsUtc != null) 'ts_utc': tsUtc,
+      if (category != null) 'category': category,
+      if (severity != null) 'severity': severity,
+      if (operation != null) 'operation': operation,
+      if (rawEventId != null) 'raw_event_id': rawEventId,
+      if (details != null) 'details': details,
+    });
+  }
+
+  DiagnosticEntriesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? tsUtc,
+    Value<String>? category,
+    Value<String>? severity,
+    Value<String>? operation,
+    Value<int?>? rawEventId,
+    Value<String>? details,
+  }) {
+    return DiagnosticEntriesCompanion(
+      id: id ?? this.id,
+      tsUtc: tsUtc ?? this.tsUtc,
+      category: category ?? this.category,
+      severity: severity ?? this.severity,
+      operation: operation ?? this.operation,
+      rawEventId: rawEventId ?? this.rawEventId,
+      details: details ?? this.details,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tsUtc.present) {
+      map['ts_utc'] = Variable<int>(tsUtc.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (severity.present) {
+      map['severity'] = Variable<String>(severity.value);
+    }
+    if (operation.present) {
+      map['operation'] = Variable<String>(operation.value);
+    }
+    if (rawEventId.present) {
+      map['raw_event_id'] = Variable<int>(rawEventId.value);
+    }
+    if (details.present) {
+      map['details'] = Variable<String>(details.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DiagnosticEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('tsUtc: $tsUtc, ')
+          ..write('category: $category, ')
+          ..write('severity: $severity, ')
+          ..write('operation: $operation, ')
+          ..write('rawEventId: $rawEventId, ')
+          ..write('details: $details')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4258,6 +4717,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ProjectionStatesTable projectionStates = $ProjectionStatesTable(
     this,
   );
+  late final $DiagnosticEntriesTable diagnosticEntries =
+      $DiagnosticEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4271,6 +4732,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bikes,
     config,
     projectionStates,
+    diagnosticEntries,
   ];
 }
 
@@ -6767,6 +7229,249 @@ typedef $$ProjectionStatesTableProcessedTableManager =
       ProjectionState,
       PrefetchHooks Function()
     >;
+typedef $$DiagnosticEntriesTableCreateCompanionBuilder =
+    DiagnosticEntriesCompanion Function({
+      Value<int> id,
+      required int tsUtc,
+      required String category,
+      required String severity,
+      required String operation,
+      Value<int?> rawEventId,
+      required String details,
+    });
+typedef $$DiagnosticEntriesTableUpdateCompanionBuilder =
+    DiagnosticEntriesCompanion Function({
+      Value<int> id,
+      Value<int> tsUtc,
+      Value<String> category,
+      Value<String> severity,
+      Value<String> operation,
+      Value<int?> rawEventId,
+      Value<String> details,
+    });
+
+class $$DiagnosticEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tsUtc => $composableBuilder(
+    column: $table.tsUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get severity => $composableBuilder(
+    column: $table.severity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rawEventId => $composableBuilder(
+    column: $table.rawEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get details => $composableBuilder(
+    column: $table.details,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DiagnosticEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tsUtc => $composableBuilder(
+    column: $table.tsUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get severity => $composableBuilder(
+    column: $table.severity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rawEventId => $composableBuilder(
+    column: $table.rawEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get details => $composableBuilder(
+    column: $table.details,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DiagnosticEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DiagnosticEntriesTable> {
+  $$DiagnosticEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get tsUtc =>
+      $composableBuilder(column: $table.tsUtc, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get severity =>
+      $composableBuilder(column: $table.severity, builder: (column) => column);
+
+  GeneratedColumn<String> get operation =>
+      $composableBuilder(column: $table.operation, builder: (column) => column);
+
+  GeneratedColumn<int> get rawEventId => $composableBuilder(
+    column: $table.rawEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get details =>
+      $composableBuilder(column: $table.details, builder: (column) => column);
+}
+
+class $$DiagnosticEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DiagnosticEntriesTable,
+          DiagnosticEntry,
+          $$DiagnosticEntriesTableFilterComposer,
+          $$DiagnosticEntriesTableOrderingComposer,
+          $$DiagnosticEntriesTableAnnotationComposer,
+          $$DiagnosticEntriesTableCreateCompanionBuilder,
+          $$DiagnosticEntriesTableUpdateCompanionBuilder,
+          (
+            DiagnosticEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $DiagnosticEntriesTable,
+              DiagnosticEntry
+            >,
+          ),
+          DiagnosticEntry,
+          PrefetchHooks Function()
+        > {
+  $$DiagnosticEntriesTableTableManager(
+    _$AppDatabase db,
+    $DiagnosticEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DiagnosticEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DiagnosticEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DiagnosticEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> tsUtc = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String> severity = const Value.absent(),
+                Value<String> operation = const Value.absent(),
+                Value<int?> rawEventId = const Value.absent(),
+                Value<String> details = const Value.absent(),
+              }) => DiagnosticEntriesCompanion(
+                id: id,
+                tsUtc: tsUtc,
+                category: category,
+                severity: severity,
+                operation: operation,
+                rawEventId: rawEventId,
+                details: details,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int tsUtc,
+                required String category,
+                required String severity,
+                required String operation,
+                Value<int?> rawEventId = const Value.absent(),
+                required String details,
+              }) => DiagnosticEntriesCompanion.insert(
+                id: id,
+                tsUtc: tsUtc,
+                category: category,
+                severity: severity,
+                operation: operation,
+                rawEventId: rawEventId,
+                details: details,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DiagnosticEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DiagnosticEntriesTable,
+      DiagnosticEntry,
+      $$DiagnosticEntriesTableFilterComposer,
+      $$DiagnosticEntriesTableOrderingComposer,
+      $$DiagnosticEntriesTableAnnotationComposer,
+      $$DiagnosticEntriesTableCreateCompanionBuilder,
+      $$DiagnosticEntriesTableUpdateCompanionBuilder,
+      (
+        DiagnosticEntry,
+        BaseReferences<_$AppDatabase, $DiagnosticEntriesTable, DiagnosticEntry>,
+      ),
+      DiagnosticEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6787,4 +7492,6 @@ class $AppDatabaseManager {
       $$ConfigTableTableManager(_db, _db.config);
   $$ProjectionStatesTableTableManager get projectionStates =>
       $$ProjectionStatesTableTableManager(_db, _db.projectionStates);
+  $$DiagnosticEntriesTableTableManager get diagnosticEntries =>
+      $$DiagnosticEntriesTableTableManager(_db, _db.diagnosticEntries);
 }
