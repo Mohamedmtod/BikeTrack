@@ -2,17 +2,39 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'app/projection_drain_coordinator.dart';
+import 'app/raw_event_writer.dart';
 import 'app/recorder_event_ingestion.dart';
 import 'app/recorder_runtime.dart';
 import 'app/recorder_session.dart';
 import 'bridge/recorder_bridge.dart';
 import 'data/database/app_database.dart';
 import 'data/events/event_repository.dart';
+import 'data/projection/event_projection_processor.dart';
+import 'data/projection/projection_id_generator.dart';
 import 'debug/recorder_debug_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const BikeTrackApp());
+}
+
+Future<void> disposeRecorderResources({
+  required RecorderEventIngestion ingestion,
+  required RecorderSession session,
+  required RawEventWriter writer,
+  required ProjectionDrainCoordinator projections,
+  required RecorderBridge bridge,
+  required AppDatabase database,
+  required RecorderRuntime runtime,
+}) async {
+  await ingestion.dispose();
+  await session.drained;
+  await writer.drained;
+  await projections.drained;
+  await bridge.dispose();
+  await database.close();
+  runtime.dispose();
 }
 
 class BikeTrackApp extends StatefulWidget {
@@ -26,6 +48,8 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
   late final AppDatabase _database;
   late final RecorderBridge _bridge;
   late final EventRepository _repository;
+  late final RawEventWriter _writer;
+  late final ProjectionDrainCoordinator _projections;
   late final RecorderRuntime _runtime;
   late final RecorderEventIngestion _ingestion;
   late final RecorderSession _session;
@@ -35,25 +59,33 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     super.initState();
     _database = AppDatabase();
     _repository = EventRepository(_database);
-    _bridge = RecorderBridge();
     _runtime = RecorderRuntime();
-    int clockMs() => DateTime.now().millisecondsSinceEpoch;
-    _ingestion = RecorderEventIngestion(
-      _bridge,
+    _projections = ProjectionDrainCoordinator(
+      EventProjectionProcessor(_database, RandomProjectionIdGenerator()),
       _repository,
       _runtime,
-      clockMs,
     );
-    _session = RecorderSession(_bridge, _repository, _runtime, clockMs);
+    _writer = RawEventWriter(
+      _repository,
+      onPersisted: _projections.scheduleAutomatic,
+    );
+    _bridge = RecorderBridge();
+    int clockMs() => DateTime.now().millisecondsSinceEpoch;
+    _ingestion = RecorderEventIngestion(_bridge, _writer, _runtime, clockMs);
+    _session = RecorderSession(_bridge, _writer, _runtime, clockMs);
     _bridge.installCallbacks();
+    _projections.scheduleAutomatic();
   }
 
-  Future<void> _disposeResources() async {
-    await _ingestion.dispose();
-    await _bridge.dispose();
-    await _database.close();
-    _runtime.dispose();
-  }
+  Future<void> _disposeResources() => disposeRecorderResources(
+    ingestion: _ingestion,
+    session: _session,
+    writer: _writer,
+    projections: _projections,
+    bridge: _bridge,
+    database: _database,
+    runtime: _runtime,
+  );
 
   @override
   void dispose() {
@@ -69,6 +101,7 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
         session: _session,
         runtime: _runtime,
         repository: _repository,
+        projections: _projections,
       ),
     );
   }

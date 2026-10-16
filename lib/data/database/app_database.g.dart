@@ -2293,9 +2293,9 @@ class $GpsPointsTable extends GpsPoints
   late final GeneratedColumn<double> altitudeM = GeneratedColumn<double>(
     'altitude_m',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _hAccuracyMMeta = const VerificationMeta(
     'hAccuracyM',
@@ -2315,9 +2315,9 @@ class $GpsPointsTable extends GpsPoints
   late final GeneratedColumn<double> vAccuracyM = GeneratedColumn<double>(
     'v_accuracy_m',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _speedMpsMeta = const VerificationMeta(
     'speedMps',
@@ -2326,9 +2326,9 @@ class $GpsPointsTable extends GpsPoints
   late final GeneratedColumn<double> speedMps = GeneratedColumn<double>(
     'speed_mps',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _speedAccuracyMpsMeta = const VerificationMeta(
     'speedAccuracyMps',
@@ -2337,9 +2337,9 @@ class $GpsPointsTable extends GpsPoints
   late final GeneratedColumn<double> speedAccuracyMps = GeneratedColumn<double>(
     'speed_accuracy_mps',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _courseDegMeta = const VerificationMeta(
     'courseDeg',
@@ -2348,9 +2348,9 @@ class $GpsPointsTable extends GpsPoints
   late final GeneratedColumn<double> courseDeg = GeneratedColumn<double>(
     'course_deg',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _acceptedMeta = const VerificationMeta(
     'accepted',
@@ -2445,8 +2445,6 @@ class $GpsPointsTable extends GpsPoints
         _altitudeMMeta,
         altitudeM.isAcceptableOrUnknown(data['altitude_m']!, _altitudeMMeta),
       );
-    } else if (isInserting) {
-      context.missing(_altitudeMMeta);
     }
     if (data.containsKey('h_accuracy_m')) {
       context.handle(
@@ -2467,16 +2465,12 @@ class $GpsPointsTable extends GpsPoints
           _vAccuracyMMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_vAccuracyMMeta);
     }
     if (data.containsKey('speed_mps')) {
       context.handle(
         _speedMpsMeta,
         speedMps.isAcceptableOrUnknown(data['speed_mps']!, _speedMpsMeta),
       );
-    } else if (isInserting) {
-      context.missing(_speedMpsMeta);
     }
     if (data.containsKey('speed_accuracy_mps')) {
       context.handle(
@@ -2486,16 +2480,12 @@ class $GpsPointsTable extends GpsPoints
           _speedAccuracyMpsMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_speedAccuracyMpsMeta);
     }
     if (data.containsKey('course_deg')) {
       context.handle(
         _courseDegMeta,
         courseDeg.isAcceptableOrUnknown(data['course_deg']!, _courseDegMeta),
       );
-    } else if (isInserting) {
-      context.missing(_courseDegMeta);
     }
     if (data.containsKey('accepted')) {
       context.handle(
@@ -2546,7 +2536,7 @@ class $GpsPointsTable extends GpsPoints
       altitudeM: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}altitude_m'],
-      )!,
+      ),
       hAccuracyM: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}h_accuracy_m'],
@@ -2554,19 +2544,19 @@ class $GpsPointsTable extends GpsPoints
       vAccuracyM: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}v_accuracy_m'],
-      )!,
+      ),
       speedMps: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}speed_mps'],
-      )!,
+      ),
       speedAccuracyMps: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}speed_accuracy_mps'],
-      )!,
+      ),
       courseDeg: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}course_deg'],
-      )!,
+      ),
       accepted: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}accepted'],
@@ -2590,12 +2580,12 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
   final int tsUtc;
   final double lat;
   final double lon;
-  final double altitudeM;
+  final double? altitudeM;
   final double hAccuracyM;
-  final double vAccuracyM;
-  final double speedMps;
-  final double speedAccuracyMps;
-  final double courseDeg;
+  final double? vAccuracyM;
+  final double? speedMps;
+  final double? speedAccuracyMps;
+  final double? courseDeg;
   final bool accepted;
   final String? rejectReason;
   const GpsPoint({
@@ -2604,12 +2594,12 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
     required this.tsUtc,
     required this.lat,
     required this.lon,
-    required this.altitudeM,
+    this.altitudeM,
     required this.hAccuracyM,
-    required this.vAccuracyM,
-    required this.speedMps,
-    required this.speedAccuracyMps,
-    required this.courseDeg,
+    this.vAccuracyM,
+    this.speedMps,
+    this.speedAccuracyMps,
+    this.courseDeg,
     required this.accepted,
     this.rejectReason,
   });
@@ -2621,12 +2611,22 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
     map['ts_utc'] = Variable<int>(tsUtc);
     map['lat'] = Variable<double>(lat);
     map['lon'] = Variable<double>(lon);
-    map['altitude_m'] = Variable<double>(altitudeM);
+    if (!nullToAbsent || altitudeM != null) {
+      map['altitude_m'] = Variable<double>(altitudeM);
+    }
     map['h_accuracy_m'] = Variable<double>(hAccuracyM);
-    map['v_accuracy_m'] = Variable<double>(vAccuracyM);
-    map['speed_mps'] = Variable<double>(speedMps);
-    map['speed_accuracy_mps'] = Variable<double>(speedAccuracyMps);
-    map['course_deg'] = Variable<double>(courseDeg);
+    if (!nullToAbsent || vAccuracyM != null) {
+      map['v_accuracy_m'] = Variable<double>(vAccuracyM);
+    }
+    if (!nullToAbsent || speedMps != null) {
+      map['speed_mps'] = Variable<double>(speedMps);
+    }
+    if (!nullToAbsent || speedAccuracyMps != null) {
+      map['speed_accuracy_mps'] = Variable<double>(speedAccuracyMps);
+    }
+    if (!nullToAbsent || courseDeg != null) {
+      map['course_deg'] = Variable<double>(courseDeg);
+    }
     map['accepted'] = Variable<bool>(accepted);
     if (!nullToAbsent || rejectReason != null) {
       map['reject_reason'] = Variable<String>(rejectReason);
@@ -2641,12 +2641,22 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
       tsUtc: Value(tsUtc),
       lat: Value(lat),
       lon: Value(lon),
-      altitudeM: Value(altitudeM),
+      altitudeM: altitudeM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(altitudeM),
       hAccuracyM: Value(hAccuracyM),
-      vAccuracyM: Value(vAccuracyM),
-      speedMps: Value(speedMps),
-      speedAccuracyMps: Value(speedAccuracyMps),
-      courseDeg: Value(courseDeg),
+      vAccuracyM: vAccuracyM == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vAccuracyM),
+      speedMps: speedMps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speedMps),
+      speedAccuracyMps: speedAccuracyMps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speedAccuracyMps),
+      courseDeg: courseDeg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseDeg),
       accepted: Value(accepted),
       rejectReason: rejectReason == null && nullToAbsent
           ? const Value.absent()
@@ -2665,12 +2675,12 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
       tsUtc: serializer.fromJson<int>(json['tsUtc']),
       lat: serializer.fromJson<double>(json['lat']),
       lon: serializer.fromJson<double>(json['lon']),
-      altitudeM: serializer.fromJson<double>(json['altitudeM']),
+      altitudeM: serializer.fromJson<double?>(json['altitudeM']),
       hAccuracyM: serializer.fromJson<double>(json['hAccuracyM']),
-      vAccuracyM: serializer.fromJson<double>(json['vAccuracyM']),
-      speedMps: serializer.fromJson<double>(json['speedMps']),
-      speedAccuracyMps: serializer.fromJson<double>(json['speedAccuracyMps']),
-      courseDeg: serializer.fromJson<double>(json['courseDeg']),
+      vAccuracyM: serializer.fromJson<double?>(json['vAccuracyM']),
+      speedMps: serializer.fromJson<double?>(json['speedMps']),
+      speedAccuracyMps: serializer.fromJson<double?>(json['speedAccuracyMps']),
+      courseDeg: serializer.fromJson<double?>(json['courseDeg']),
       accepted: serializer.fromJson<bool>(json['accepted']),
       rejectReason: serializer.fromJson<String?>(json['rejectReason']),
     );
@@ -2684,12 +2694,12 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
       'tsUtc': serializer.toJson<int>(tsUtc),
       'lat': serializer.toJson<double>(lat),
       'lon': serializer.toJson<double>(lon),
-      'altitudeM': serializer.toJson<double>(altitudeM),
+      'altitudeM': serializer.toJson<double?>(altitudeM),
       'hAccuracyM': serializer.toJson<double>(hAccuracyM),
-      'vAccuracyM': serializer.toJson<double>(vAccuracyM),
-      'speedMps': serializer.toJson<double>(speedMps),
-      'speedAccuracyMps': serializer.toJson<double>(speedAccuracyMps),
-      'courseDeg': serializer.toJson<double>(courseDeg),
+      'vAccuracyM': serializer.toJson<double?>(vAccuracyM),
+      'speedMps': serializer.toJson<double?>(speedMps),
+      'speedAccuracyMps': serializer.toJson<double?>(speedAccuracyMps),
+      'courseDeg': serializer.toJson<double?>(courseDeg),
       'accepted': serializer.toJson<bool>(accepted),
       'rejectReason': serializer.toJson<String?>(rejectReason),
     };
@@ -2701,12 +2711,12 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
     int? tsUtc,
     double? lat,
     double? lon,
-    double? altitudeM,
+    Value<double?> altitudeM = const Value.absent(),
     double? hAccuracyM,
-    double? vAccuracyM,
-    double? speedMps,
-    double? speedAccuracyMps,
-    double? courseDeg,
+    Value<double?> vAccuracyM = const Value.absent(),
+    Value<double?> speedMps = const Value.absent(),
+    Value<double?> speedAccuracyMps = const Value.absent(),
+    Value<double?> courseDeg = const Value.absent(),
     bool? accepted,
     Value<String?> rejectReason = const Value.absent(),
   }) => GpsPoint(
@@ -2715,12 +2725,14 @@ class GpsPoint extends DataClass implements Insertable<GpsPoint> {
     tsUtc: tsUtc ?? this.tsUtc,
     lat: lat ?? this.lat,
     lon: lon ?? this.lon,
-    altitudeM: altitudeM ?? this.altitudeM,
+    altitudeM: altitudeM.present ? altitudeM.value : this.altitudeM,
     hAccuracyM: hAccuracyM ?? this.hAccuracyM,
-    vAccuracyM: vAccuracyM ?? this.vAccuracyM,
-    speedMps: speedMps ?? this.speedMps,
-    speedAccuracyMps: speedAccuracyMps ?? this.speedAccuracyMps,
-    courseDeg: courseDeg ?? this.courseDeg,
+    vAccuracyM: vAccuracyM.present ? vAccuracyM.value : this.vAccuracyM,
+    speedMps: speedMps.present ? speedMps.value : this.speedMps,
+    speedAccuracyMps: speedAccuracyMps.present
+        ? speedAccuracyMps.value
+        : this.speedAccuracyMps,
+    courseDeg: courseDeg.present ? courseDeg.value : this.courseDeg,
     accepted: accepted ?? this.accepted,
     rejectReason: rejectReason.present ? rejectReason.value : this.rejectReason,
   );
@@ -2811,12 +2823,12 @@ class GpsPointsCompanion extends UpdateCompanion<GpsPoint> {
   final Value<int> tsUtc;
   final Value<double> lat;
   final Value<double> lon;
-  final Value<double> altitudeM;
+  final Value<double?> altitudeM;
   final Value<double> hAccuracyM;
-  final Value<double> vAccuracyM;
-  final Value<double> speedMps;
-  final Value<double> speedAccuracyMps;
-  final Value<double> courseDeg;
+  final Value<double?> vAccuracyM;
+  final Value<double?> speedMps;
+  final Value<double?> speedAccuracyMps;
+  final Value<double?> courseDeg;
   final Value<bool> accepted;
   final Value<String?> rejectReason;
   const GpsPointsCompanion({
@@ -2840,24 +2852,19 @@ class GpsPointsCompanion extends UpdateCompanion<GpsPoint> {
     required int tsUtc,
     required double lat,
     required double lon,
-    required double altitudeM,
+    this.altitudeM = const Value.absent(),
     required double hAccuracyM,
-    required double vAccuracyM,
-    required double speedMps,
-    required double speedAccuracyMps,
-    required double courseDeg,
+    this.vAccuracyM = const Value.absent(),
+    this.speedMps = const Value.absent(),
+    this.speedAccuracyMps = const Value.absent(),
+    this.courseDeg = const Value.absent(),
     required bool accepted,
     this.rejectReason = const Value.absent(),
   }) : segmentId = Value(segmentId),
        tsUtc = Value(tsUtc),
        lat = Value(lat),
        lon = Value(lon),
-       altitudeM = Value(altitudeM),
        hAccuracyM = Value(hAccuracyM),
-       vAccuracyM = Value(vAccuracyM),
-       speedMps = Value(speedMps),
-       speedAccuracyMps = Value(speedAccuracyMps),
-       courseDeg = Value(courseDeg),
        accepted = Value(accepted);
   static Insertable<GpsPoint> custom({
     Expression<int>? id,
@@ -2897,12 +2904,12 @@ class GpsPointsCompanion extends UpdateCompanion<GpsPoint> {
     Value<int>? tsUtc,
     Value<double>? lat,
     Value<double>? lon,
-    Value<double>? altitudeM,
+    Value<double?>? altitudeM,
     Value<double>? hAccuracyM,
-    Value<double>? vAccuracyM,
-    Value<double>? speedMps,
-    Value<double>? speedAccuracyMps,
-    Value<double>? courseDeg,
+    Value<double?>? vAccuracyM,
+    Value<double?>? speedMps,
+    Value<double?>? speedAccuracyMps,
+    Value<double?>? courseDeg,
     Value<bool>? accepted,
     Value<String?>? rejectReason,
   }) {
@@ -4033,6 +4040,209 @@ class ConfigCompanion extends UpdateCompanion<ConfigData> {
   }
 }
 
+class $ProjectionStatesTable extends ProjectionStates
+    with TableInfo<$ProjectionStatesTable, ProjectionState> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectionStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _snapshotJsonMeta = const VerificationMeta(
+    'snapshotJson',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotJson = GeneratedColumn<String>(
+    'snapshot_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, snapshotJson];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'projection_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProjectionState> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('snapshot_json')) {
+      context.handle(
+        _snapshotJsonMeta,
+        snapshotJson.isAcceptableOrUnknown(
+          data['snapshot_json']!,
+          _snapshotJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProjectionState map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProjectionState(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      snapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_json'],
+      )!,
+    );
+  }
+
+  @override
+  $ProjectionStatesTable createAlias(String alias) {
+    return $ProjectionStatesTable(attachedDatabase, alias);
+  }
+}
+
+class ProjectionState extends DataClass implements Insertable<ProjectionState> {
+  final int id;
+  final String snapshotJson;
+  const ProjectionState({required this.id, required this.snapshotJson});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['snapshot_json'] = Variable<String>(snapshotJson);
+    return map;
+  }
+
+  ProjectionStatesCompanion toCompanion(bool nullToAbsent) {
+    return ProjectionStatesCompanion(
+      id: Value(id),
+      snapshotJson: Value(snapshotJson),
+    );
+  }
+
+  factory ProjectionState.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProjectionState(
+      id: serializer.fromJson<int>(json['id']),
+      snapshotJson: serializer.fromJson<String>(json['snapshotJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'snapshotJson': serializer.toJson<String>(snapshotJson),
+    };
+  }
+
+  ProjectionState copyWith({int? id, String? snapshotJson}) => ProjectionState(
+    id: id ?? this.id,
+    snapshotJson: snapshotJson ?? this.snapshotJson,
+  );
+  ProjectionState copyWithCompanion(ProjectionStatesCompanion data) {
+    return ProjectionState(
+      id: data.id.present ? data.id.value : this.id,
+      snapshotJson: data.snapshotJson.present
+          ? data.snapshotJson.value
+          : this.snapshotJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectionState(')
+          ..write('id: $id, ')
+          ..write('snapshotJson: $snapshotJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, snapshotJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProjectionState &&
+          other.id == this.id &&
+          other.snapshotJson == this.snapshotJson);
+}
+
+class ProjectionStatesCompanion extends UpdateCompanion<ProjectionState> {
+  final Value<int> id;
+  final Value<String> snapshotJson;
+  const ProjectionStatesCompanion({
+    this.id = const Value.absent(),
+    this.snapshotJson = const Value.absent(),
+  });
+  ProjectionStatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String snapshotJson,
+  }) : snapshotJson = Value(snapshotJson);
+  static Insertable<ProjectionState> custom({
+    Expression<int>? id,
+    Expression<String>? snapshotJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (snapshotJson != null) 'snapshot_json': snapshotJson,
+    });
+  }
+
+  ProjectionStatesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? snapshotJson,
+  }) {
+    return ProjectionStatesCompanion(
+      id: id ?? this.id,
+      snapshotJson: snapshotJson ?? this.snapshotJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (snapshotJson.present) {
+      map['snapshot_json'] = Variable<String>(snapshotJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectionStatesCompanion(')
+          ..write('id: $id, ')
+          ..write('snapshotJson: $snapshotJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4045,6 +4255,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $BikesTable bikes = $BikesTable(this);
   late final $ConfigTable config = $ConfigTable(this);
+  late final $ProjectionStatesTable projectionStates = $ProjectionStatesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4057,6 +4270,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     activitySamples,
     bikes,
     config,
+    projectionStates,
   ];
 }
 
@@ -5387,12 +5601,12 @@ typedef $$GpsPointsTableCreateCompanionBuilder = GpsPointsCompanion Function({
   required int tsUtc,
   required double lat,
   required double lon,
-  required double altitudeM,
+  Value<double?> altitudeM,
   required double hAccuracyM,
-  required double vAccuracyM,
-  required double speedMps,
-  required double speedAccuracyMps,
-  required double courseDeg,
+  Value<double?> vAccuracyM,
+  Value<double?> speedMps,
+  Value<double?> speedAccuracyMps,
+  Value<double?> courseDeg,
   required bool accepted,
   Value<String?> rejectReason,
 });
@@ -5402,12 +5616,12 @@ typedef $$GpsPointsTableUpdateCompanionBuilder = GpsPointsCompanion Function({
   Value<int> tsUtc,
   Value<double> lat,
   Value<double> lon,
-  Value<double> altitudeM,
+  Value<double?> altitudeM,
   Value<double> hAccuracyM,
-  Value<double> vAccuracyM,
-  Value<double> speedMps,
-  Value<double> speedAccuracyMps,
-  Value<double> courseDeg,
+  Value<double?> vAccuracyM,
+  Value<double?> speedMps,
+  Value<double?> speedAccuracyMps,
+  Value<double?> courseDeg,
   Value<bool> accepted,
   Value<String?> rejectReason,
 });
@@ -5732,12 +5946,12 @@ class $$GpsPointsTableTableManager
                 Value<int> tsUtc = const Value.absent(),
                 Value<double> lat = const Value.absent(),
                 Value<double> lon = const Value.absent(),
-                Value<double> altitudeM = const Value.absent(),
+                Value<double?> altitudeM = const Value.absent(),
                 Value<double> hAccuracyM = const Value.absent(),
-                Value<double> vAccuracyM = const Value.absent(),
-                Value<double> speedMps = const Value.absent(),
-                Value<double> speedAccuracyMps = const Value.absent(),
-                Value<double> courseDeg = const Value.absent(),
+                Value<double?> vAccuracyM = const Value.absent(),
+                Value<double?> speedMps = const Value.absent(),
+                Value<double?> speedAccuracyMps = const Value.absent(),
+                Value<double?> courseDeg = const Value.absent(),
                 Value<bool> accepted = const Value.absent(),
                 Value<String?> rejectReason = const Value.absent(),
               }) => GpsPointsCompanion(
@@ -5762,12 +5976,12 @@ class $$GpsPointsTableTableManager
                 required int tsUtc,
                 required double lat,
                 required double lon,
-                required double altitudeM,
+                Value<double?> altitudeM = const Value.absent(),
                 required double hAccuracyM,
-                required double vAccuracyM,
-                required double speedMps,
-                required double speedAccuracyMps,
-                required double courseDeg,
+                Value<double?> vAccuracyM = const Value.absent(),
+                Value<double?> speedMps = const Value.absent(),
+                Value<double?> speedAccuracyMps = const Value.absent(),
+                Value<double?> courseDeg = const Value.absent(),
                 required bool accepted,
                 Value<String?> rejectReason = const Value.absent(),
               }) => GpsPointsCompanion.insert(
@@ -6412,6 +6626,147 @@ typedef $$ConfigTableProcessedTableManager =
       ConfigData,
       PrefetchHooks Function()
     >;
+typedef $$ProjectionStatesTableCreateCompanionBuilder =
+    ProjectionStatesCompanion Function({
+      Value<int> id,
+      required String snapshotJson,
+    });
+typedef $$ProjectionStatesTableUpdateCompanionBuilder =
+    ProjectionStatesCompanion Function({
+      Value<int> id,
+      Value<String> snapshotJson,
+    });
+
+class $$ProjectionStatesTableFilterComposer
+    extends Composer<_$AppDatabase, $ProjectionStatesTable> {
+  $$ProjectionStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProjectionStatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProjectionStatesTable> {
+  $$ProjectionStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProjectionStatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProjectionStatesTable> {
+  $$ProjectionStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get snapshotJson => $composableBuilder(
+    column: $table.snapshotJson,
+    builder: (column) => column,
+  );
+}
+
+class $$ProjectionStatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProjectionStatesTable,
+          ProjectionState,
+          $$ProjectionStatesTableFilterComposer,
+          $$ProjectionStatesTableOrderingComposer,
+          $$ProjectionStatesTableAnnotationComposer,
+          $$ProjectionStatesTableCreateCompanionBuilder,
+          $$ProjectionStatesTableUpdateCompanionBuilder,
+          (
+            ProjectionState,
+            BaseReferences<
+              _$AppDatabase,
+              $ProjectionStatesTable,
+              ProjectionState
+            >,
+          ),
+          ProjectionState,
+          PrefetchHooks Function()
+        > {
+  $$ProjectionStatesTableTableManager(
+    _$AppDatabase db,
+    $ProjectionStatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectionStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectionStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProjectionStatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> snapshotJson = const Value.absent(),
+          }) => ProjectionStatesCompanion(id: id, snapshotJson: snapshotJson),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String snapshotJson,
+              }) => ProjectionStatesCompanion.insert(
+                id: id,
+                snapshotJson: snapshotJson,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProjectionStatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProjectionStatesTable,
+      ProjectionState,
+      $$ProjectionStatesTableFilterComposer,
+      $$ProjectionStatesTableOrderingComposer,
+      $$ProjectionStatesTableAnnotationComposer,
+      $$ProjectionStatesTableCreateCompanionBuilder,
+      $$ProjectionStatesTableUpdateCompanionBuilder,
+      (
+        ProjectionState,
+        BaseReferences<_$AppDatabase, $ProjectionStatesTable, ProjectionState>,
+      ),
+      ProjectionState,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6430,4 +6785,6 @@ class $AppDatabaseManager {
       $$BikesTableTableManager(_db, _db.bikes);
   $$ConfigTableTableManager get config =>
       $$ConfigTableTableManager(_db, _db.config);
+  $$ProjectionStatesTableTableManager get projectionStates =>
+      $$ProjectionStatesTableTableManager(_db, _db.projectionStates);
 }

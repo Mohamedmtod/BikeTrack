@@ -62,14 +62,22 @@ class GpsPoints extends Table {
   IntColumn get tsUtc => integer()();
   RealColumn get lat => real()();
   RealColumn get lon => real()();
-  RealColumn get altitudeM => real()();
+  RealColumn get altitudeM => real().nullable()();
   RealColumn get hAccuracyM => real()();
-  RealColumn get vAccuracyM => real()();
-  RealColumn get speedMps => real()();
-  RealColumn get speedAccuracyMps => real()();
-  RealColumn get courseDeg => real()();
+  RealColumn get vAccuracyM => real().nullable()();
+  RealColumn get speedMps => real().nullable()();
+  RealColumn get speedAccuracyMps => real().nullable()();
+  RealColumn get courseDeg => real().nullable()();
   BoolColumn get accepted => boolean()();
   TextColumn get rejectReason => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ProjectionStates extends Table {
+  IntColumn get id => integer()();
+  TextColumn get snapshotJson => text()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -1,5 +1,6 @@
 # STATUS — BikeTrack
 
-- Completed: T-016 raw callback ingestion, manual recorder session, debug console, `readRecent(limit)`, and focused tests (D-032).
-- Validation: `dart format .` formatted 95 files (0 changed); `flutter analyze` found no issues; `flutter test` passed (168 tests).
-- iOS build and production iPhone UI/native behavior remain unverified on Windows; owner device verification is needed.
+- T-018 disposal-safety correction: resource teardown awaits all started manual RecorderSession operations before draining writes/projections or closing the database.
+- Session completion includes pending native start/stop and required start-result appends; caller errors remain visible without failing the disposal barrier.
+- D-033/D-034 projection and raw-event ordering remain unchanged; formatting check clean, `flutter analyze` clean, `flutter test` passed (198 tests).
+- iOS build and iPhone native/debug UI behavior remain unverified on Windows; owner device verification is needed.

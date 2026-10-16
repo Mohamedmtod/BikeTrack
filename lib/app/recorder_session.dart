@@ -3,21 +3,37 @@ import 'dart:convert';
 import '../bridge/recorder_bridge.dart';
 import '../bridge/recorder_events.dart';
 import '../data/events/event_record.dart';
-import '../data/events/event_repository.dart';
 import '../domain/shared/event_source.dart';
+import 'raw_event_writer.dart';
 import 'recorder_runtime.dart';
 
 class RecorderSession {
-  RecorderSession(this._bridge, this._repository, this._runtime, this._clockMs);
+  RecorderSession(this._bridge, this._writer, this._runtime, this._clockMs);
 
   final RecorderBridge _bridge;
-  final EventRepository _repository;
+  final RawEventWriter _writer;
   final RecorderRuntime _runtime;
   final int Function() _clockMs;
+  Future<void> _pending = Future<void>.value();
 
-  Future<RecorderStart> startManual(String attemptId) async {
+  Future<void> get drained => _pending;
+
+  void _track(Future<dynamic> operation) {
+    _pending = Future.wait<void>([
+      _pending,
+      operation.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+    ]);
+  }
+
+  Future<RecorderStart> startManual(String attemptId) {
+    final operation = _startManual(attemptId);
+    _track(operation);
+    return operation;
+  }
+
+  Future<RecorderStart> _startManual(String attemptId) async {
     try {
-      await _repository.append(
+      await _writer.append(
         NewEvent(
           tsUtc: _clockMs(),
           source: EventSource.user,
@@ -31,30 +47,68 @@ class RecorderSession {
     }
 
     _runtime.setActivity(RecorderActivity.starting);
+    final RecorderStart result;
     try {
-      final result = await _bridge.start('user', attemptId);
-      if (result.started) {
-        _runtime.setActivity(RecorderActivity.recording);
-      } else {
-        _runtime.setActivity(RecorderActivity.idle);
-        _runtime.nativeFailed(
-          'start rejected',
-          result.reason ?? 'unknown reason',
-        );
-      }
-      return result;
+      result = await _bridge.start('user', attemptId);
     } catch (error) {
       _runtime.setActivity(RecorderActivity.idle);
       _runtime.nativeFailed('start', error);
       rethrow;
     }
+
+    if (result.started) {
+      _runtime.setActivity(RecorderActivity.recording);
+      await _appendStartResult(
+        type: 'recorder_start_confirmed',
+        attemptId: attemptId,
+        details: {'rideId': result.rideId},
+      );
+    } else {
+      _runtime.setActivity(RecorderActivity.idle);
+      _runtime.nativeFailed(
+        'start rejected',
+        result.reason ?? 'unknown reason',
+      );
+      await _appendStartResult(
+        type: 'recorder_start_failed',
+        attemptId: attemptId,
+        details: {'reason': result.reason},
+      );
+    }
+    return result;
   }
 
-  Future<void> stopManual() async {
+  Future<void> _appendStartResult({
+    required String type,
+    required String attemptId,
+    required Map<String, Object?> details,
+  }) async {
+    try {
+      await _writer.append(
+        NewEvent(
+          tsUtc: _clockMs(),
+          source: EventSource.system,
+          type: type,
+          payloadJson: jsonEncode({'attemptId': attemptId, ...details}),
+        ),
+      );
+    } catch (error) {
+      _runtime.persistenceFailed(type, error);
+      rethrow;
+    }
+  }
+
+  Future<void> stopManual() {
+    final operation = _stopManual();
+    _track(operation);
+    return operation;
+  }
+
+  Future<void> _stopManual() async {
     Object? writeError;
     StackTrace? writeStack;
     try {
-      await _repository.append(
+      await _writer.append(
         NewEvent(
           tsUtc: _clockMs(),
           source: EventSource.user,

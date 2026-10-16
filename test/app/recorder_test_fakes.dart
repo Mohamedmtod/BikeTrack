@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
 import 'package:biketrack/bridge/recorder_api.dart';
 import 'package:biketrack/data/events/event_record.dart';
@@ -37,6 +39,31 @@ class FakeNativeRecorderApi implements NativeRecorderApi {
 
   @override
   Future<void> requestAlways() async {}
+}
+
+class PendingNativeRecorderApi extends FakeNativeRecorderApi {
+  final startCalled = Completer<void>();
+  final stopCalled = Completer<void>();
+  Completer<pigeon.RecorderStartResult>? startCompletion;
+  Completer<void>? stopCompletion;
+
+  @override
+  Future<pigeon.RecorderStartResult> start(String trigger, String attemptId) {
+    if (!startCalled.isCompleted) startCalled.complete();
+    final completion = startCompletion;
+    if (completion == null) return super.start(trigger, attemptId);
+    calls.add('start:$trigger:$attemptId');
+    return completion.future;
+  }
+
+  @override
+  Future<void> stop() {
+    if (!stopCalled.isCompleted) stopCalled.complete();
+    final completion = stopCompletion;
+    if (completion == null) return super.stop();
+    calls.add('stop');
+    return completion.future;
+  }
 }
 
 class FakeEventRepository extends EventRepository {

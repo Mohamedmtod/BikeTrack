@@ -110,6 +110,30 @@ void main() {
     },
   );
 
+  test('readNextUnprocessed selects the lowest pending insertion ID', () async {
+    final first = await repository.append(
+      const NewEvent(
+        tsUtc: 300,
+        source: EventSource.system,
+        type: 'first',
+        payloadJson: '{}',
+      ),
+    );
+    final second = await repository.append(
+      const NewEvent(
+        tsUtc: 100,
+        source: EventSource.system,
+        type: 'second',
+        payloadJson: '{}',
+      ),
+    );
+    expect((await repository.readNextUnprocessed())?.id, first);
+    await repository.markProcessed([first]);
+    expect((await repository.readNextUnprocessed())?.id, second);
+    await repository.markProcessed([second]);
+    expect(await repository.readNextUnprocessed(), isNull);
+  });
+
   test('readRecent includes processed and unprocessed in descending insertion ID without mutation', () async {
     final first = await repository.append(
       const NewEvent(
