@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_event_ingestion.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
@@ -29,7 +30,7 @@ void main() {
     runtime = RecorderRuntime();
     ingestion = RecorderEventIngestion(
       bridge,
-      repository,
+      RawEventWriter(repository),
       runtime,
       () => clock++,
     );

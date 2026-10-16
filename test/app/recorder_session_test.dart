@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/app/recorder_session.dart';
 import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
@@ -25,7 +26,12 @@ void main() {
     native = FakeNativeRecorderApi();
     bridge = RecorderBridge(nativeApi: native);
     runtime = RecorderRuntime();
-    session = RecorderSession(bridge, repository, runtime, () => 98765);
+    session = RecorderSession(
+      bridge,
+      RawEventWriter(repository),
+      runtime,
+      () => 98765,
+    );
   });
   tearDown(() async {
     await bridge.dispose();
@@ -37,17 +43,27 @@ void main() {
     'manual start writes raw intent before asking bridge to start',
     () async {
       repository.onAppend = (event) async {
-        expect(native.calls, isEmpty);
+        if (event.type == 'user_start') expect(native.calls, isEmpty);
         return FakeEventRepository(database).append(event);
       };
       final result = await session.startManual('explicit-id');
       expect(result.started, isTrue);
       expect(native.calls, ['start:user:explicit-id']);
-      final stored = (await repository.readRecent(10)).single;
-      expect(stored.tsUtc, 98765);
-      expect(stored.source, EventSource.user);
-      expect(stored.type, 'user_start');
-      expect(jsonDecode(stored.payloadJson), {'attemptId': 'explicit-id'});
+      final stored = (await repository.readRecent(10)).reversed.toList();
+      expect(stored.map((event) => event.type), [
+        'user_start',
+        'recorder_start_confirmed',
+      ]);
+      expect(stored.first.tsUtc, 98765);
+      expect(stored.first.source, EventSource.user);
+      expect(jsonDecode(stored.first.payloadJson), {
+        'attemptId': 'explicit-id',
+      });
+      expect(stored.last.source, EventSource.system);
+      expect(jsonDecode(stored.last.payloadJson), {
+        'attemptId': 'explicit-id',
+        'rideId': 'ride-1',
+      });
       expect(runtime.activity, RecorderActivity.recording);
     },
   );
@@ -106,8 +122,46 @@ void main() {
     expect(rejected.started, isFalse);
     expect(runtime.latestNativeError, contains('not authorized'));
     expect(runtime.activity, RecorderActivity.idle);
-    expect((await repository.readRecent(10)).length, 2);
+    expect((await repository.readRecent(10)).length, 3);
   });
+
+  test(
+    'start-result persistence failures remain visible in runtime state',
+    () async {
+      repository.onAppend = (event) async {
+        if (event.type == 'recorder_start_confirmed') {
+          throw StateError('confirmation write failed');
+        }
+        return FakeEventRepository(database).append(event);
+      };
+
+      await expectLater(session.startManual('confirmed'), throwsStateError);
+      expect(
+        runtime.latestPersistenceError,
+        contains(
+          'recorder_start_confirmed: Bad state: confirmation write failed',
+        ),
+      );
+      expect(runtime.activity, RecorderActivity.recording);
+
+      native.startResult = pigeon.RecorderStartResult(
+        started: false,
+        reason: 'denied',
+      );
+      repository.onAppend = (event) async {
+        if (event.type == 'recorder_start_failed') {
+          throw StateError('failure write failed');
+        }
+        return FakeEventRepository(database).append(event);
+      };
+      await expectLater(session.startManual('failed'), throwsStateError);
+      expect(
+        runtime.latestPersistenceError,
+        contains('recorder_start_failed: Bad state: failure write failed'),
+      );
+      expect(runtime.activity, RecorderActivity.idle);
+    },
+  );
 
   test('native stop failure surfaces alongside a failed stop write', () async {
     repository.onAppend = (_) async => throw StateError('disk full');

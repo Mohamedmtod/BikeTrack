@@ -1,5 +1,6 @@
 # STATUS — BikeTrack
 
-- Completed: T-016 raw callback ingestion, manual recorder session, debug console, `readRecent(limit)`, and focused tests (D-032).
-- Validation: `dart format .` formatted 95 files (0 changed); `flutter analyze` found no issues; `flutter test` passed (168 tests).
+- Completed: T-017 schema v2 migration, shared serial raw writer, and atomic restart-safe raw-event projection (D-033).
+- Projection snapshots preserve filter/trip state and cursor; confirmed manual starts create conservative unknown-distance cycling records.
+- Validation: `dart format .`, `flutter analyze`, and `flutter test` passed (183 tests).
 - iOS build and production iPhone UI/native behavior remain unverified on Windows; owner device verification is needed.

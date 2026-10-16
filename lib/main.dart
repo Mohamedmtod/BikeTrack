@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'app/raw_event_writer.dart';
 import 'app/recorder_event_ingestion.dart';
 import 'app/recorder_runtime.dart';
 import 'app/recorder_session.dart';
@@ -26,6 +27,7 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
   late final AppDatabase _database;
   late final RecorderBridge _bridge;
   late final EventRepository _repository;
+  late final RawEventWriter _writer;
   late final RecorderRuntime _runtime;
   late final RecorderEventIngestion _ingestion;
   late final RecorderSession _session;
@@ -35,16 +37,12 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     super.initState();
     _database = AppDatabase();
     _repository = EventRepository(_database);
+    _writer = RawEventWriter(_repository);
     _bridge = RecorderBridge();
     _runtime = RecorderRuntime();
     int clockMs() => DateTime.now().millisecondsSinceEpoch;
-    _ingestion = RecorderEventIngestion(
-      _bridge,
-      _repository,
-      _runtime,
-      clockMs,
-    );
-    _session = RecorderSession(_bridge, _repository, _runtime, clockMs);
+    _ingestion = RecorderEventIngestion(_bridge, _writer, _runtime, clockMs);
+    _session = RecorderSession(_bridge, _writer, _runtime, clockMs);
     _bridge.installCallbacks();
   }
 

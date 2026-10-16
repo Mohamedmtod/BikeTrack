@@ -20,6 +20,19 @@ Reviewer: <other agent or owner>
 
 ---
 
+### T-017 — Event projections and restart-safe processing
+Owner: Claude Code CLI
+Status: done
+Branch: task/T-017-event-projections
+Plan refs: §3.2, §5.2–§5.4, §6.2, §7.2, §15 M2; D-033
+Goal: Migrate persistence to v2 and atomically project raw events into restart-safe trip, segment, and GPS evidence.
+Allowed files: `lib/main.dart`, `lib/app/**`, `lib/debug/**`, `lib/data/database/**`, `lib/data/events/**`, `lib/data/projection/**`, `test/app/**`, `test/data/**`, `test/debug/**`, `test/widget_test.dart`, `docs/DECISIONS.md`, `docs/TASKS.md`, `docs/STATUS.md`, `docs/CODEMAP.md`
+Forbidden: everything else, including domain, bridge, iOS/Pigeon, dependencies, maps, motion, HealthKit, and Riverpod.
+Steps: Add the v1-to-v2 migration, shared raw-event writer, explicit snapshot codec and atomic projection processor, with focused Windows tests.
+Tests required: migration, snapshot, atomic rollback/order/restart/idempotence, manual confirmation safeguards, GPS projection, shared writer, and runtime persistence-failure coverage; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: D-033 behavior, stable insertion-ID processing, no fabricated distance/native data, and all validation green.
+Reviewer: Owner
+
 ### T-016 — Raw recorder event ingestion and debug console
 Owner: Claude Code CLI
 Status: done

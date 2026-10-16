@@ -1,3 +1,4 @@
+import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/app/recorder_session.dart';
 import 'package:biketrack/bridge/recorder_bridge.dart';
@@ -21,7 +22,12 @@ void main() {
       final native = FakeNativeRecorderApi();
       final bridge = RecorderBridge(nativeApi: native);
       final runtime = RecorderRuntime();
-      final session = RecorderSession(bridge, repository, runtime, () => 1000);
+      final session = RecorderSession(
+        bridge,
+        RawEventWriter(repository),
+        runtime,
+        () => 1000,
+      );
       addTearDown(() async {
         await bridge.dispose();
         await database.close();

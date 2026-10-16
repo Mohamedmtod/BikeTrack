@@ -3,14 +3,14 @@ import 'dart:convert';
 
 import '../bridge/recorder_bridge.dart';
 import '../data/events/event_record.dart';
-import '../data/events/event_repository.dart';
 import '../domain/shared/event_source.dart';
+import 'raw_event_writer.dart';
 import 'recorder_runtime.dart';
 
 class RecorderEventIngestion {
   RecorderEventIngestion(
     RecorderBridge bridge,
-    this._repository,
+    this._writer,
     this._runtime,
     this._clockMs,
   ) {
@@ -81,22 +81,24 @@ class RecorderEventIngestion {
     ]);
   }
 
-  final EventRepository _repository;
+  final RawEventWriter _writer;
   final RecorderRuntime _runtime;
   final int Function() _clockMs;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Future<void> _pending = Future<void>.value();
 
-  // Queue errors are reported in runtime state, then the next callback proceeds.
   void _enqueue(NewEvent Function() makeEvent) {
-    _pending = _pending.then((_) async {
-      try {
-        await _repository.append(makeEvent());
-        _runtime.callbackPersisted();
-      } catch (error) {
-        _runtime.persistenceFailed('recorder callback', error);
-      }
-    });
+    final pending = _appendCallback(makeEvent);
+    _pending = Future.wait<void>([_pending, pending]);
+  }
+
+  Future<void> _appendCallback(NewEvent Function() makeEvent) async {
+    try {
+      await _writer.append(makeEvent());
+      _runtime.callbackPersisted();
+    } catch (error) {
+      _runtime.persistenceFailed('recorder callback', error);
+    }
   }
 
   Future<void> get drained => _pending;
