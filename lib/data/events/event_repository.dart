@@ -57,6 +57,29 @@ class EventRepository {
     ];
   }
 
+  Future<List<StoredEvent>> readRecent(int limit) async {
+    if (limit <= 0) {
+      throw ArgumentError.value(limit, 'limit', 'Must be positive');
+    }
+    final rows =
+        await (_database.select(_database.events)
+              ..orderBy([(event) => OrderingTerm.desc(event.id)])
+              ..limit(limit))
+            .get();
+    return [
+      for (final row in rows)
+        StoredEvent(
+          id: row.id,
+          tsUtc: row.tsUtc,
+          source: row.source,
+          type: row.type,
+          payloadJson: row.payload,
+          tripId: row.tripId,
+          processed: row.processed,
+        ),
+    ];
+  }
+
   Future<void> markProcessed(Iterable<int> ids) async {
     final selected = ids.toSet();
     if (selected.isEmpty) return;

@@ -20,6 +20,19 @@ Reviewer: <other agent or owner>
 
 ---
 
+### T-016 — Raw recorder event ingestion and debug console
+Owner: Claude Code CLI
+Status: done
+Branch: task/T-016-recorder-event-ingestion
+Plan refs: §3.1, §3.2, §4, §5.2, §15 M2; D-032
+Goal: Persist every live recorder callback as raw evidence and expose manual recorder controls and recent events in a minimal debug console.
+Allowed files: `lib/main.dart`, `lib/app/**`, `lib/debug/**`, `lib/data/events/**`, `test/app/**`, `test/debug/**`, `test/data/events/**`, `test/widget_test.dart`, `docs/DECISIONS.md`, `docs/TASKS.md`, `docs/STATUS.md`, `docs/CODEMAP.md`
+Forbidden: everything else; especially bridge/native contracts, schema, domain, and dependencies.
+Steps: Implement serial callback ingestion and observable errors; manual session start/stop with D-032 write ordering; add `readRecent(limit)` and debug UI; update docs.
+Tests required: repository recent ordering/limit/integrity; callback mapping, timestamps, ordering and write failures; manual start/stop persistence and native failures; widget status/errors/events; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: D-032 mapping and failure behavior; Pigeon callbacks installed before manual controls; explicit disposal; no additional repositories or trip processing; all validation green.
+Reviewer: Owner
+
 ### T-015 — Drift local data foundation
 Owner: Claude Code CLI
 Status: done

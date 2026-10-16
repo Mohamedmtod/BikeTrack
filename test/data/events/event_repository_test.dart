@@ -110,6 +110,58 @@ void main() {
     },
   );
 
+  test('readRecent includes processed and unprocessed in descending insertion ID without mutation', () async {
+    final first = await repository.append(
+      const NewEvent(
+        tsUtc: 500,
+        source: EventSource.gps,
+        type: 'location',
+        payloadJson: '{ "raw": [1, 2] }',
+        tripId: 'ride-1',
+      ),
+    );
+    final second = await repository.append(
+      const NewEvent(
+        tsUtc: 100,
+        source: EventSource.system,
+        type: 'location_error',
+        payloadJson: '{"code":"test"}',
+      ),
+    );
+    final third = await repository.append(
+      const NewEvent(
+        tsUtc: 300,
+        source: EventSource.user,
+        type: 'user_stop',
+        payloadJson: '{}',
+      ),
+    );
+    await repository.markProcessed([second]);
+    final before = await database
+        .customSelect('SELECT * FROM events ORDER BY id')
+        .get();
+    final recent = await repository.readRecent(3);
+    expect(recent.map((e) => e.id), [third, second, first]);
+    expect(recent.map((e) => e.tsUtc), [300, 100, 500]);
+    expect(recent.map((e) => e.processed), [false, true, false]);
+    expect(recent.last.source, EventSource.gps);
+    expect(recent.last.type, 'location');
+    expect(recent.last.payloadJson, '{ "raw": [1, 2] }');
+    expect(recent.last.tripId, 'ride-1');
+    expect((await repository.readRecent(1)).map((e) => e.id), [third]);
+    expect((await repository.readRecent(10)).length, 3);
+    final after = await database
+        .customSelect('SELECT * FROM events ORDER BY id')
+        .get();
+    expect(after.map((row) => row.data), before.map((row) => row.data));
+  });
+
+  test('readRecent rejects zero and negative limits', () async {
+    await expectLater(repository.readRecent(0), throwsArgumentError);
+    await expectLater(repository.readRecent(-1), throwsArgumentError);
+    expect(await repository.readRecent(1), isEmpty);
+  });
+
   test('marking selected events changes only their processed flag', () async {
     final first = await repository.append(
       const NewEvent(
