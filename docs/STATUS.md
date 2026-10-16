@@ -2,8 +2,8 @@
 
 Keep under 15 lines. Overwrite, don't append history.
 
-- Current milestone: M4 trip lifecycle phase 2
-- Last completed: T-011 TripStateMachine phase 2 (D-030)
-- Next: Owner review of task/T-011-trip-state-phase2
-- Blockers: none
-- Repo: github.com/Mohamedmtod/BikeTrack | Toolchain: Flutter 3.47.7 / Dart 3.13.5
+- Current task: T-015 Drift local data foundation (WIP; D-031 accepted).
+- Done: Seven v1 table definitions, event repository, database opener/guards, Windows tests and pinned dependencies are written.
+- Remaining: Generate Drift bindings, verify/fix schema and tests, run format/analyze/test, then mark T-015 done.
+- Blocker: `dart run build_runner build` exceeded 600 seconds without producing app_database.g.dart; stopped the background process.
+- Next: Diagnose generator stall, regenerate bindings without destructive flags, then verify and complete T-015.
