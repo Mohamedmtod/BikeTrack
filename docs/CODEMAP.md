@@ -123,11 +123,13 @@ test/data/projection/projection_snapshot_test.dart — Explicit projection snaps
 test/data/projection/event_projection_processor_test.dart — Migration-safe atomic event projection, order, restart, and GPS evidence tests
 lib/app/recorder_runtime.dart — Observable recorder activity, callback count, and latest persistence/native errors
 lib/app/raw_event_writer.dart — Shared in-memory serial raw-event append writer
+lib/app/projection_drain_coordinator.dart — Single-flight automatic/startup projection drain, blockage and explicit retry
 lib/app/recorder_event_ingestion.dart — Serial raw RecorderBridge callback persistence and runtime updates
 lib/app/recorder_session.dart — Manual intent persistence and native recorder start/stop coordination
 lib/debug/recorder_debug_screen.dart — Manual controls, runtime errors, and recent-event debug console
 test/app/recorder_test_fakes.dart — Shared native API and event write fakes for application tests
 test/app/raw_event_writer_test.dart — Serial shared raw-event append ordering and failure continuation tests
+test/app/projection_drain_coordinator_test.dart — Automatic, startup, single-flight, failure/retry and restart projection tests
 test/app/recorder_event_ingestion_test.dart — Raw callback mapping, timestamp, ordering, and failure tests
 test/app/recorder_session_test.dart — Manual start/stop intent and native error tests
 

@@ -1,3 +1,4 @@
+import 'package:biketrack/app/projection_drain_coordinator.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/app/recorder_session.dart';
@@ -5,6 +6,8 @@ import 'package:biketrack/bridge/recorder_bridge.dart';
 import 'package:biketrack/data/database/app_database.dart';
 import 'package:biketrack/data/events/event_record.dart';
 import 'package:biketrack/data/events/event_repository.dart';
+import 'package:biketrack/data/projection/event_projection_processor.dart';
+import 'package:biketrack/data/projection/projection_id_generator.dart';
 import 'package:biketrack/debug/recorder_debug_screen.dart';
 import 'package:biketrack/domain/shared/event_source.dart';
 import 'package:drift/native.dart';
@@ -12,6 +15,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'app/recorder_test_fakes.dart';
+
+class _Ids implements ProjectionIdGenerator {
+  @override
+  String nextTripId() => 'trip-1';
+
+  @override
+  String nextSegmentId() => 'segment-1';
+}
+
+class _FailOnceProcessor implements ProjectionProcessor {
+  _FailOnceProcessor(this.delegate);
+
+  final ProjectionProcessor delegate;
+  bool fail = true;
+
+  @override
+  Future<bool> processNext() {
+    if (fail) throw StateError('projection unavailable');
+    return delegate.processNext();
+  }
+}
 
 void main() {
   testWidgets(
@@ -22,6 +46,11 @@ void main() {
       final native = FakeNativeRecorderApi();
       final bridge = RecorderBridge(nativeApi: native);
       final runtime = RecorderRuntime();
+      final projections = ProjectionDrainCoordinator(
+        EventProjectionProcessor(database, _Ids()),
+        repository,
+        runtime,
+      );
       final session = RecorderSession(
         bridge,
         RawEventWriter(repository),
@@ -29,6 +58,7 @@ void main() {
         () => 1000,
       );
       addTearDown(() async {
+        await projections.drained;
         await bridge.dispose();
         await database.close();
         runtime.dispose();
@@ -48,13 +78,15 @@ void main() {
             session: session,
             runtime: runtime,
             repository: repository,
+            projections: projections,
           ),
         ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Recorder: idle'), findsOneWidget);
+      expect(find.text('Projections: idle'), findsOneWidget);
       expect(find.text('Persisted callbacks: 0'), findsOneWidget);
-      expect(find.text('gps / location / 42'), findsOneWidget);
+      expect(find.text('#1 / gps / location / 42 / pending'), findsOneWidget);
       expect(find.text('Trip: ride-7\n{"recvMs":57}'), findsOneWidget);
 
       runtime.persistenceFailed('user_stop', StateError('disk full'));
@@ -89,7 +121,111 @@ void main() {
       );
       await tester.tap(find.byTooltip('Refresh events'));
       await tester.pumpAndSettle();
-      expect(find.text('system / fresh / 99'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('#5 / system / fresh / 99 / pending'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('#5 / system / fresh / 99 / pending'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'shows processed and pending events and retries only from debug',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final repository = EventRepository(database);
+      final native = FakeNativeRecorderApi();
+      final bridge = RecorderBridge(nativeApi: native);
+      final runtime = RecorderRuntime();
+      final processor = _FailOnceProcessor(
+        EventProjectionProcessor(database, _Ids()),
+      );
+      final projections = ProjectionDrainCoordinator(
+        processor,
+        repository,
+        runtime,
+      );
+      final session = RecorderSession(
+        bridge,
+        RawEventWriter(repository),
+        runtime,
+        () => 1000,
+      );
+      addTearDown(() async {
+        await projections.drained;
+        await bridge.dispose();
+        await database.close();
+        runtime.dispose();
+      });
+      await repository.append(
+        const NewEvent(
+          tsUtc: 100,
+          source: EventSource.system,
+          type: 'processed-first',
+          payloadJson: '{}',
+        ),
+      );
+      processor.fail = false;
+      projections.scheduleAutomatic();
+      await projections.drained;
+      processor.fail = true;
+      await repository.append(
+        const NewEvent(
+          tsUtc: 50,
+          source: EventSource.system,
+          type: 'blocked-second',
+          payloadJson: '{"detail":"pending"}',
+        ),
+      );
+      projections.scheduleAutomatic();
+      await projections.drained;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecorderDebugScreen(
+            session: session,
+            runtime: runtime,
+            repository: repository,
+            projections: projections,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Projections: blocked'), findsOneWidget);
+      expect(
+        find.text('#1 / system / processed-first / 100 / processed'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('#2 / system / blocked-second / 50 / pending'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Blocking event: #2 / blocked-second / 50'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('"detail":"pending"'), findsWidgets);
+      expect(
+        find.textContaining(
+          'Projection error: Bad state: projection unavailable',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Retry projections'), findsOneWidget);
+
+      processor.fail = false;
+      await tester.tap(find.text('Retry projections'));
+      await tester.pumpAndSettle();
+      expect(find.text('Projections: idle'), findsOneWidget);
+      expect(
+        find.text('#2 / system / blocked-second / 50 / processed'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry projections'), findsNothing);
+      expect((await repository.readUnprocessed()), isEmpty);
+      expect(native.calls, isEmpty);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

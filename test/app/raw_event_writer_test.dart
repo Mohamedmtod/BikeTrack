@@ -62,6 +62,44 @@ void main() {
     },
   );
 
+  test(
+    'notifies only committed writes without changing persistence results',
+    () async {
+      var notifications = 0;
+      writer = RawEventWriter(
+        repository,
+        onPersisted: () {
+          notifications++;
+          throw StateError('projection scheduling failed');
+        },
+      );
+      final id = await writer.append(
+        const NewEvent(
+          tsUtc: 1,
+          source: EventSource.user,
+          type: 'ok',
+          payloadJson: '{}',
+        ),
+      );
+      expect(id, 1);
+      expect(notifications, 1);
+      repository.onAppend = (_) async => throw StateError('disk full');
+      await expectLater(
+        writer.append(
+          const NewEvent(
+            tsUtc: 2,
+            source: EventSource.user,
+            type: 'bad',
+            payloadJson: '{}',
+          ),
+        ),
+        throwsStateError,
+      );
+      expect(notifications, 1);
+      expect((await repository.readRecent(10)).single.type, 'ok');
+    },
+  );
+
   test('continues after a failed append without retrying it', () async {
     var calls = 0;
     repository.onAppend = (event) async {

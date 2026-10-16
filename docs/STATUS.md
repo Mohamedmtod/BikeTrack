@@ -1,6 +1,6 @@
 # STATUS — BikeTrack
 
-- Completed: T-017 schema v2 migration, shared serial raw writer, and atomic restart-safe raw-event projection (D-033).
-- Projection snapshots preserve filter/trip state and cursor; confirmed manual starts create conservative unknown-distance cycling records.
-- Validation: `dart format .`, `flutter analyze`, and `flutter test` passed (183 tests).
-- iOS build and production iPhone UI/native behavior remain unverified on Windows; owner device verification is needed.
+- Completed: T-018 automatic single-flight raw-event projection with startup drain and insertion-ID ordering (D-034).
+- Projection errors block the first failing event without blocking raw writes/native controls; runtime/debug show the event, error, pending state and explicit retry.
+- T-017 transactional snapshots and idempotent processing remain unchanged; targeted format and full format check clean, `flutter analyze` clean, `flutter test` passed (193 tests).
+- iOS build and iPhone native/debug UI behavior remain unverified on Windows; owner device verification is needed.

@@ -1,16 +1,27 @@
 import 'dart:convert';
 
+import 'package:biketrack/app/projection_drain_coordinator.dart';
 import 'package:biketrack/app/raw_event_writer.dart';
 import 'package:biketrack/app/recorder_runtime.dart';
 import 'package:biketrack/app/recorder_session.dart';
 import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
 import 'package:biketrack/bridge/recorder_bridge.dart';
 import 'package:biketrack/data/database/app_database.dart';
+import 'package:biketrack/data/projection/event_projection_processor.dart';
+import 'package:biketrack/data/projection/projection_id_generator.dart';
 import 'package:biketrack/domain/shared/event_source.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'recorder_test_fakes.dart';
+
+class _FailingIds implements ProjectionIdGenerator {
+  @override
+  String nextTripId() => 'trip-1';
+
+  @override
+  String nextSegmentId() => throw StateError('projection failed');
+}
 
 void main() {
   late AppDatabase database;
@@ -160,6 +171,42 @@ void main() {
         contains('recorder_start_failed: Bad state: failure write failed'),
       );
       expect(runtime.activity, RecorderActivity.idle);
+    },
+  );
+
+  test(
+    'projection failure does not stop native start, stop, or raw writes',
+    () async {
+      final projections = ProjectionDrainCoordinator(
+        EventProjectionProcessor(database, _FailingIds()),
+        repository,
+        runtime,
+      );
+      final connectedSession = RecorderSession(
+        bridge,
+        RawEventWriter(repository, onPersisted: projections.scheduleAutomatic),
+        runtime,
+        () => 98765,
+      );
+
+      final started = await connectedSession.startManual('attempt');
+      expect(started.started, isTrue);
+      await projections.drained;
+      expect(runtime.projectionState, ProjectionDrainState.blocked);
+      expect(runtime.blockingProjectionEvent?.type, 'recorder_start_confirmed');
+      expect(runtime.latestProjectionError, contains('projection failed'));
+      expect(runtime.latestPersistenceError, isNull);
+      await connectedSession.stopManual();
+      expect(native.calls, ['start:user:attempt', 'stop']);
+      expect((await repository.readRecent(3)).map((e) => e.type), [
+        'user_stop',
+        'recorder_start_confirmed',
+        'user_start',
+      ]);
+      expect((await repository.readUnprocessed()).map((e) => e.type), [
+        'recorder_start_confirmed',
+        'user_stop',
+      ]);
     },
   );
 

@@ -37,6 +37,26 @@ class EventRepository {
         );
   }
 
+  Future<StoredEvent?> readNextUnprocessed() async {
+    final rows =
+        await (_database.select(_database.events)
+              ..where((event) => event.processed.equals(false))
+              ..orderBy([(event) => OrderingTerm.asc(event.id)])
+              ..limit(1))
+            .get();
+    if (rows.isEmpty) return null;
+    final row = rows.single;
+    return StoredEvent(
+      id: row.id,
+      tsUtc: row.tsUtc,
+      source: row.source,
+      type: row.type,
+      payloadJson: row.payload,
+      tripId: row.tripId,
+      processed: row.processed,
+    );
+  }
+
   Future<List<StoredEvent>> readUnprocessed() async {
     final rows =
         await (_database.select(_database.events)

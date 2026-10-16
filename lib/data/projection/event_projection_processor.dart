@@ -16,7 +16,11 @@ import '../events/event_record.dart';
 import 'projection_id_generator.dart';
 import 'projection_snapshot.dart';
 
-class EventProjectionProcessor {
+abstract interface class ProjectionProcessor {
+  Future<bool> processNext();
+}
+
+class EventProjectionProcessor implements ProjectionProcessor {
   EventProjectionProcessor(
     this._database,
     this._idGenerator, {
@@ -27,6 +31,7 @@ class EventProjectionProcessor {
   final ProjectionIdGenerator _idGenerator;
   final DomainConfig _config;
 
+  @override
   Future<bool> processNext() async => _database.transaction(() async {
     final snapshot = await _loadSnapshot();
     final row =
