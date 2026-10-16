@@ -22,7 +22,7 @@ Reviewer: <other agent or owner>
 
 ### T-016 — Raw recorder event ingestion and debug console
 Owner: Claude Code CLI
-Status: in-progress
+Status: done
 Branch: task/T-016-recorder-event-ingestion
 Plan refs: §3.1, §3.2, §4, §5.2, §15 M2; D-032
 Goal: Persist every live recorder callback as raw evidence and expose manual recorder controls and recent events in a minimal debug console.
