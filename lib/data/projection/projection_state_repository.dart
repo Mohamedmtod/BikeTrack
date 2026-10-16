@@ -10,6 +10,13 @@ class ProjectionStateRepository {
 
   final AppDatabase _database;
 
+  Future<String?> readStoredJson() async {
+    final row = await (_database.select(
+      _database.projectionStates,
+    )..where((state) => state.id.equals(_singletonId))).getSingleOrNull();
+    return row?.snapshotJson;
+  }
+
   Future<ProjectionSnapshot> load() async {
     final row = await (_database.select(
       _database.projectionStates,

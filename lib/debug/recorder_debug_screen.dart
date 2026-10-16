@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/projection_drain_coordinator.dart';
 import '../app/recorder_runtime.dart';
 import '../app/recorder_session.dart';
+import '../data/diagnostics/diagnostic_bundle_exporter.dart';
 import '../data/events/event_record.dart';
 import '../data/events/event_repository.dart';
 
@@ -13,12 +14,14 @@ class RecorderDebugScreen extends StatefulWidget {
     required this.runtime,
     required this.repository,
     required this.projections,
+    required this.exporter,
   });
 
   final RecorderSession session;
   final RecorderRuntime runtime;
   final EventRepository repository;
   final ProjectionDrainCoordinator projections;
+  final DiagnosticBundleExporter exporter;
 
   @override
   State<RecorderDebugScreen> createState() => _RecorderDebugScreenState();
@@ -29,6 +32,11 @@ class _RecorderDebugScreenState extends State<RecorderDebugScreen> {
   final _attemptId = TextEditingController();
   List<StoredEvent> _events = [];
   String? _readError;
+  String? _exportOutcome;
+  bool _exporting = false;
+  static const privacyWarning =
+      'This diagnostic bundle may contain GPS coordinates, route history, timestamps, '
+      'ride identifiers, and error details. Review where you save or share it.';
   late ProjectionDrainState _lastProjectionState;
 
   @override
@@ -83,6 +91,26 @@ class _RecorderDebugScreenState extends State<RecorderDebugScreen> {
   Future<void> _retryProjections() async {
     await widget.projections.retry();
     await _refresh();
+  }
+
+  Future<void> _export() async {
+    setState(() {
+      _exporting = true;
+      _exportOutcome = null;
+    });
+    try {
+      final result = await widget.exporter.export();
+      if (mounted) {
+        setState(
+          () => _exportOutcome =
+              'Exported to ${result.path} (${result.byteSize} bytes)',
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _exportOutcome = 'Export error: $error');
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   @override
@@ -149,6 +177,12 @@ class _RecorderDebugScreenState extends State<RecorderDebugScreen> {
               ],
             ),
           ),
+          const Text(privacyWarning),
+          ElevatedButton(
+            onPressed: _exporting ? null : _export,
+            child: const Text('Export diagnostics to Files'),
+          ),
+          if (_exportOutcome != null) Text(_exportOutcome!),
           if (_readError != null) Text('Recent events error: $_readError'),
           const Text('Recent events'),
           for (final event in _events)

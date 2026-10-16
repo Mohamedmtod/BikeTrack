@@ -1,4 +1,11 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'app/diagnostics_coordinator.dart';
+import 'bridge/generated/recorder.g.dart';
+import 'data/diagnostics/diagnostic_bundle_exporter.dart';
+import 'data/diagnostics/diagnostic_repository.dart';
+import 'data/projection/projection_state_repository.dart';
 
 import 'package:flutter/material.dart';
 
@@ -27,12 +34,14 @@ Future<void> disposeRecorderResources({
   required RecorderBridge bridge,
   required AppDatabase database,
   required RecorderRuntime runtime,
+  DiagnosticsCoordinator? diagnostics,
 }) async {
   await ingestion.dispose();
   await session.drained;
   await writer.drained;
   await projections.drained;
   await bridge.dispose();
+  if (diagnostics != null) await diagnostics.drained;
   await database.close();
   runtime.dispose();
 }
@@ -51,6 +60,8 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
   late final RawEventWriter _writer;
   late final ProjectionDrainCoordinator _projections;
   late final RecorderRuntime _runtime;
+  late final DiagnosticsCoordinator _diagnostics;
+  late final DiagnosticBundleExporter _exporter;
   late final RecorderEventIngestion _ingestion;
   late final RecorderSession _session;
 
@@ -59,7 +70,23 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     super.initState();
     _database = AppDatabase();
     _repository = EventRepository(_database);
-    _runtime = RecorderRuntime();
+    int clockMs() => DateTime.now().millisecondsSinceEpoch;
+    _diagnostics = DiagnosticsCoordinator(
+      DiagnosticRepository(_database),
+      clockMs: clockMs,
+    );
+    _runtime = RecorderRuntime(diagnostics: _diagnostics);
+    _exporter = DiagnosticBundleExporter(
+      events: _repository,
+      diagnostics: DiagnosticRepository(_database),
+      projections: ProjectionStateRepository(_database),
+      runtime: _runtime,
+      documentsPath: RecorderHostApi().documentsDirectoryPath,
+      platformMetadata: {
+        'operating_system': Platform.operatingSystem,
+        'operating_system_version': Platform.operatingSystemVersion,
+      },
+    );
     _projections = ProjectionDrainCoordinator(
       EventProjectionProcessor(_database, RandomProjectionIdGenerator()),
       _repository,
@@ -68,9 +95,9 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     _writer = RawEventWriter(
       _repository,
       onPersisted: _projections.scheduleAutomatic,
+      diagnostics: _diagnostics,
     );
     _bridge = RecorderBridge();
-    int clockMs() => DateTime.now().millisecondsSinceEpoch;
     _ingestion = RecorderEventIngestion(_bridge, _writer, _runtime, clockMs);
     _session = RecorderSession(_bridge, _writer, _runtime, clockMs);
     _bridge.installCallbacks();
@@ -85,6 +112,7 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
     bridge: _bridge,
     database: _database,
     runtime: _runtime,
+    diagnostics: _diagnostics,
   );
 
   @override
@@ -102,6 +130,7 @@ class _BikeTrackAppState extends State<BikeTrackApp> {
         runtime: _runtime,
         repository: _repository,
         projections: _projections,
+        exporter: _exporter,
       ),
     );
   }

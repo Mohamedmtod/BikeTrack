@@ -108,27 +108,34 @@ lib/bridge/recorder_api.dart — Testable Dart interface and Pigeon client for r
 lib/bridge/recorder_events.dart — Typed bridge events and raw-fix to GpsSample mapping
 lib/bridge/recorder_bridge.dart — Recorder command facade and native callback stream adapter
 test/bridge/recorder_bridge_test.dart — Unit tests for recorder command and callback bridge mappings
-lib/data/database/tables.dart — Drift schema for version-2 persistence tables, including the singleton projection snapshot
-lib/data/database/app_database.dart — Drift database, v1-to-v2 migration, indexes, and append-only event guards
-lib/data/database/app_database.g.dart — Generated Drift table models and typed database bindings
+lib/data/database/tables.dart — Drift schema v3 including bounded diagnostic entries and projection snapshot
+lib/data/database/app_database.dart — Drift v1-to-v3 migrations, diagnostics indexes, and append-only event guards
+lib/data/database/app_database.g.dart — Generated Drift v3 table models and typed database bindings
+lib/data/diagnostics/diagnostic_entry.dart — Diagnostics retention/size config and entry models
+lib/data/diagnostics/diagnostic_repository.dart — Validated diagnostic insertion, age/count pruning, and ordered reads
+lib/data/diagnostics/diagnostic_bundle_exporter.dart — Manual size-checked JSON bundle generation for Documents
 lib/data/events/event_record.dart — Typed input and stored event value models
 lib/data/events/event_repository.dart — Validated append, ordered unprocessed reads, and selective processing
 lib/data/projection/projection_snapshot.dart — Versioned explicit-JSON restart snapshot codec for filter and trip state
 lib/data/projection/projection_state_repository.dart — Singleton projection snapshot persistence
 lib/data/projection/projection_id_generator.dart — Injectable trip and segment ID generator
 lib/data/projection/event_projection_processor.dart — Atomic insertion-order raw-event projection into trips, segments, and GPS points
-test/data/database/app_database_test.dart — Windows schema, index, enum, and reopen tests
+test/data/database/app_database_test.dart — Windows v3 schema, migration preservation, index, enum, and reopen tests
+test/data/diagnostics/diagnostic_repository_test.dart — Diagnostic JSON integrity, retention, and pruning isolation tests
+test/data/diagnostics/diagnostic_bundle_exporter_test.dart — Exact raw payload, ordered bundle, state, and oversize tests
 test/data/events/event_repository_test.dart — Windows event integrity, processing, reopen, and recent-read tests
 test/data/projection/projection_snapshot_test.dart — Explicit projection snapshot JSON round-trip and version-rejection tests
 test/data/projection/event_projection_processor_test.dart — Migration-safe atomic event projection, order, restart, and GPS evidence tests
 lib/app/recorder_runtime.dart — Observable recorder activity, callback count, and latest persistence/native errors
-lib/app/raw_event_writer.dart — Shared in-memory serial raw-event append writer
+lib/app/raw_event_writer.dart — Shared serial raw-event append writer with central write-failure diagnostics
+lib/app/diagnostics_coordinator.dart — Unawaited best-effort failure reporting across recorder and projection flows
 lib/app/projection_drain_coordinator.dart — Single-flight automatic/startup projection drain, blockage and explicit retry
 lib/app/recorder_event_ingestion.dart — Serial raw RecorderBridge callback persistence and runtime updates
 lib/app/recorder_session.dart — Manual intent persistence and native recorder start/stop coordination
 lib/debug/recorder_debug_screen.dart — Manual controls, runtime errors, and recent-event debug console
 test/app/recorder_test_fakes.dart — Shared native API and event write fakes for application tests
-test/app/raw_event_writer_test.dart — Serial shared raw-event append ordering and failure continuation tests
+test/app/raw_event_writer_test.dart — Serial raw append ordering, failure continuation, and central diagnostic isolation tests
+test/app/diagnostics_coordinator_test.dart — Narrow best-effort reporting, swallowed persistence failures, and nonrecursion tests
 test/app/projection_drain_coordinator_test.dart — Automatic, startup, single-flight, failure/retry and restart projection tests
 test/app/recorder_event_ingestion_test.dart — Raw callback mapping, timestamp, ordering, and failure tests
 test/app/recorder_session_test.dart — Manual start/stop intent and native error tests

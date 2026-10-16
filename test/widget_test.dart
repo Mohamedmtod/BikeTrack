@@ -8,6 +8,9 @@ import 'package:biketrack/app/recorder_session.dart';
 import 'package:biketrack/bridge/generated/recorder.g.dart' as pigeon;
 import 'package:biketrack/bridge/recorder_bridge.dart';
 import 'package:biketrack/data/database/app_database.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_bundle_exporter.dart';
+import 'package:biketrack/data/diagnostics/diagnostic_repository.dart';
+import 'package:biketrack/data/projection/projection_state_repository.dart';
 import 'package:biketrack/data/events/event_record.dart';
 import 'package:biketrack/data/events/event_repository.dart';
 import 'package:biketrack/data/projection/event_projection_processor.dart';
@@ -17,6 +20,7 @@ import 'package:biketrack/domain/shared/event_source.dart';
 import 'package:biketrack/main.dart' show disposeRecorderResources;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'app/recorder_test_fakes.dart';
@@ -39,6 +43,27 @@ class _FailOnceProcessor implements ProjectionProcessor {
   Future<bool> processNext() {
     if (fail) throw StateError('projection unavailable');
     return delegate.processNext();
+  }
+}
+
+class _StubExporter extends DiagnosticBundleExporter {
+  _StubExporter(AppDatabase database, RecorderRuntime runtime)
+    : super(
+        events: EventRepository(database),
+        diagnostics: DiagnosticRepository(database),
+        projections: ProjectionStateRepository(database),
+        runtime: runtime,
+        documentsPath: () async => '/unused',
+      );
+
+  int calls = 0;
+  Object? failure;
+
+  @override
+  Future<DiagnosticExportResult> export() async {
+    calls++;
+    if (failure case final error?) throw error;
+    return const DiagnosticExportResult('/app/Documents/report.json', 123);
   }
 }
 
@@ -153,6 +178,7 @@ void main() {
             runtime: runtime,
             repository: repository,
             projections: projections,
+            exporter: _StubExporter(database, runtime),
           ),
         ),
       );
@@ -202,6 +228,103 @@ void main() {
       );
       expect(find.text('#5 / system / fresh / 99 / pending'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'manual export warns before action and reports path, size and errors',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      final repository = EventRepository(database);
+      final native = FakeNativeRecorderApi();
+      final bridge = RecorderBridge(nativeApi: native);
+      final runtime = RecorderRuntime();
+      final projections = ProjectionDrainCoordinator(
+        EventProjectionProcessor(database, _Ids()),
+        repository,
+        runtime,
+      );
+      final session = RecorderSession(
+        bridge,
+        RawEventWriter(repository),
+        runtime,
+        () => 1000,
+      );
+      addTearDown(() async {
+        await bridge.dispose();
+        await database.close();
+        runtime.dispose();
+      });
+      final exporter = _StubExporter(database, runtime);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RecorderDebugScreen(
+            session: session,
+            runtime: runtime,
+            repository: repository,
+            projections: projections,
+            exporter: exporter,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      const warning =
+          'This diagnostic bundle may contain GPS coordinates, route history, timestamps, ride identifiers, and error details. Review where you save or share it.';
+      expect(find.text(warning), findsOneWidget);
+      expect(exporter.calls, 0);
+      await tester.ensureVisible(find.text('Export diagnostics to Files'));
+      await tester.tap(find.text('Export diagnostics to Files'));
+      await tester.pumpAndSettle();
+      expect(exporter.calls, 1);
+      expect(
+        find.textContaining(
+          'Exported to /app/Documents/report.json (123 bytes)',
+        ),
+        findsOneWidget,
+      );
+      exporter.failure = StateError('no space');
+      await tester.tap(find.text('Export diagnostics to Files'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Export error: Bad state: no space'),
+        findsOneWidget,
+      );
+      expect(exporter.calls, 2);
+      expect(native.calls, isEmpty);
+    },
+  );
+
+  test(
+    'generated Pigeon Documents path resolves at the Dart channel boundary',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel =
+          'dev.flutter.pigeon.biketrack.RecorderHostApi.documentsDirectoryPath';
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockDecodedMessageHandler(
+        BasicMessageChannel<Object?>(
+          channel,
+          pigeon.RecorderHostApi.pigeonChannelCodec,
+        ),
+        (message) async {
+          expect(message, isNull);
+          return <Object?>['/app/Documents'];
+        },
+      );
+      addTearDown(
+        () => messenger.setMockDecodedMessageHandler(
+          BasicMessageChannel<Object?>(
+            channel,
+            pigeon.RecorderHostApi.pigeonChannelCodec,
+          ),
+          null,
+        ),
+      );
+      expect(
+        await pigeon.RecorderHostApi().documentsDirectoryPath(),
+        '/app/Documents',
+      );
     },
   );
 
@@ -263,6 +386,7 @@ void main() {
             runtime: runtime,
             repository: repository,
             projections: projections,
+            exporter: _StubExporter(database, runtime),
           ),
         ),
       );

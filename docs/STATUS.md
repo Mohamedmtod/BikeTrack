@@ -1,6 +1,6 @@
 # STATUS — BikeTrack
 
-- T-018 disposal-safety correction: resource teardown awaits all started manual RecorderSession operations before draining writes/projections or closing the database.
-- Session completion includes pending native start/stop and required start-result appends; caller errors remain visible without failing the disposal barrier.
-- D-033/D-034 projection and raw-event ordering remain unchanged; formatting check clean, `flutter analyze` clean, `flutter test` passed (198 tests).
-- iOS build and iPhone native/debug UI behavior remain unverified on Windows; owner device verification is needed.
+- T-019 implements D-035: schema v3 adds bounded best-effort diagnostic failures without pruning raw evidence or projections.
+- Manual debug export writes a size-checked JSON bundle into iOS Documents through the approved Pigeon path and displays the exact privacy warning.
+- `dart format .` clean, `flutter analyze` clean, `flutter test` passed (210 tests); generated Dart/Swift bindings updated.
+- Swift compilation and iPhone Files visibility remain unverified on Windows and require owner verification.

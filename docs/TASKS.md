@@ -20,6 +20,19 @@ Reviewer: <other agent or owner>
 
 ---
 
+### T-019 — Durable diagnostics and local export
+Owner: Claude Code CLI
+Status: review
+Branch: task/T-019-diagnostics-export
+Plan refs: D-035, §5.2–§5.4, §6.4
+Goal: Add v3 diagnostic persistence for defined failures and user-initiated JSON export to iOS Files Documents via Pigeon.
+Allowed files: `lib/data/database/{tables.dart,app_database.dart,app_database.g.dart}`, `lib/data/events/event_repository.dart`, `lib/data/projection/projection_state_repository.dart`, `lib/data/diagnostics/{diagnostic_entry.dart,diagnostic_repository.dart,diagnostic_bundle_exporter.dart}`, `lib/app/{raw_event_writer.dart,recorder_runtime.dart,recorder_event_ingestion.dart,recorder_session.dart,projection_drain_coordinator.dart,diagnostics_coordinator.dart}`, `lib/debug/recorder_debug_screen.dart`, `lib/main.dart`, `pigeons/recorder.dart`, `lib/bridge/generated/recorder.g.dart`, `ios/Runner/Generated/Recorder.g.swift`, `ios/Runner/Recorder/RideRecorder.swift`, `ios/Runner/Info.plist`, `test/data/database/app_database_test.dart`, `test/data/diagnostics/{diagnostic_repository_test.dart,diagnostic_bundle_exporter_test.dart}`, `test/app/{raw_event_writer_test.dart,recorder_session_test.dart,recorder_event_ingestion_test.dart,projection_drain_coordinator_test.dart,diagnostics_coordinator_test.dart,recorder_test_fakes.dart}`, `test/widget_test.dart`, `docs/{CODEMAP.md,STATUS.md,TASKS.md,DECISIONS.md}`
+Forbidden: everything else; no new dependencies, remote behavior, or unrelated bridge changes.
+Steps: Migrate v2 to v3; wire narrow unawaited best-effort diagnostics; generate Pigeon bindings for Documents path and implement Swift host; add size-checked local bundle and warning/debug action.
+Tests required: migration/evidence, JSON validation and pruning isolation, raw/native/projection sources, nonblocking failure swallowing, exact payload and ID ordering, oversize no file, UI warning/outcome, Dart Pigeon path boundary; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: D-035 fields, retention, capture and export constraints; generated Dart/Swift bindings committed; only approved files changed; Windows validation green; iOS/device verification explicitly deferred to owner.
+Reviewer: Owner
+
 ### T-018 — Automatic projection processing and startup drain
 Owner: Claude Code CLI
 Status: done

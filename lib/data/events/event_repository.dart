@@ -77,6 +77,24 @@ class EventRepository {
     ];
   }
 
+  Future<List<StoredEvent>> readAll() async {
+    final rows = await (_database.select(
+      _database.events,
+    )..orderBy([(event) => OrderingTerm.asc(event.id)])).get();
+    return [
+      for (final row in rows)
+        StoredEvent(
+          id: row.id,
+          tsUtc: row.tsUtc,
+          source: row.source,
+          type: row.type,
+          payloadJson: row.payload,
+          tripId: row.tripId,
+          processed: row.processed,
+        ),
+    ];
+  }
+
   Future<List<StoredEvent>> readRecent(int limit) async {
     if (limit <= 0) {
       throw ArgumentError.value(limit, 'limit', 'Must be positive');
