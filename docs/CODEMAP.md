@@ -110,6 +110,7 @@ lib/bridge/recorder_bridge.dart — Recorder command facade and native callback 
 test/bridge/recorder_bridge_test.dart — Unit tests for recorder command and callback bridge mappings
 lib/data/database/tables.dart — Drift schema for the seven version-1 persistence tables
 lib/data/database/app_database.dart — Drift database, production opener, indexes, and append-only event guards
+lib/data/database/app_database.g.dart — Generated Drift table models and typed database bindings
 lib/data/events/event_record.dart — Typed input and stored event value models
 lib/data/events/event_repository.dart — Validated append, ordered unprocessed reads, and selective processing
 test/data/database/app_database_test.dart — Windows schema, index, enum, and reopen tests

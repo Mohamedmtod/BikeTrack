@@ -12,7 +12,11 @@ class EventRepository {
 
   Future<int> append(NewEvent event) async {
     if (event.type.isEmpty) {
-      throw ArgumentError.value(event.type, 'type', 'Event type must not be empty');
+      throw ArgumentError.value(
+        event.type,
+        'type',
+        'Event type must not be empty',
+      );
     }
     try {
       jsonDecode(event.payloadJson);
@@ -20,22 +24,25 @@ class EventRepository {
       throw FormatException('Invalid event payload JSON: ${error.message}');
     }
 
-    return _database.into(_database.events).insert(
-      EventsCompanion.insert(
-        tsUtc: event.tsUtc,
-        source: event.source,
-        type: event.type,
-        payload: event.payloadJson,
-        tripId: Value(event.tripId),
-      ),
-    );
+    return _database
+        .into(_database.events)
+        .insert(
+          EventsCompanion.insert(
+            tsUtc: event.tsUtc,
+            source: event.source,
+            type: event.type,
+            payload: event.payloadJson,
+            tripId: Value(event.tripId),
+          ),
+        );
   }
 
   Future<List<StoredEvent>> readUnprocessed() async {
-    final rows = await (_database.select(_database.events)
-          ..where((event) => event.processed.equals(false))
-          ..orderBy([(event) => OrderingTerm.asc(event.id)]))
-        .get();
+    final rows =
+        await (_database.select(_database.events)
+              ..where((event) => event.processed.equals(false))
+              ..orderBy([(event) => OrderingTerm.asc(event.id)]))
+            .get();
     return [
       for (final row in rows)
         StoredEvent(
@@ -53,11 +60,9 @@ class EventRepository {
   Future<void> markProcessed(Iterable<int> ids) async {
     final selected = ids.toSet();
     if (selected.isEmpty) return;
-    await (_database.update(_database.events)
-          ..where(
-            (event) =>
-                event.id.isIn(selected) & event.processed.equals(false),
-          ))
+    await (_database.update(_database.events)..where(
+          (event) => event.id.isIn(selected) & event.processed.equals(false),
+        ))
         .write(const EventsCompanion(processed: Value(true)));
   }
 }

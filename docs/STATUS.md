@@ -2,8 +2,8 @@
 
 Keep under 15 lines. Overwrite, don't append history.
 
-- Current task: T-015 Drift local data foundation (WIP; D-031 accepted).
-- Done: Seven v1 table definitions, event repository, database opener/guards, Windows tests and pinned dependencies are written.
-- Remaining: Generate Drift bindings, verify/fix schema and tests, run format/analyze/test, then mark T-015 done.
-- Blocker: `dart run build_runner build` exceeded 600 seconds without producing app_database.g.dart; stopped the background process.
-- Next: Diagnose generator stall, regenerate bindings without destructive flags, then verify and complete T-015.
+- Completed: T-015 Drift local data foundation (D-031); schema v1, generated bindings, and event repository.
+- Filtered build_runner succeeded in 7 seconds; no dependency changes in this continuation.
+- Validation: scoped `dart format lib/data test/data` ran; `flutter analyze` found no issues; `flutter test` passed (156 tests).
+- Blocker: `dart format .` was denied by the permission classifier; unrelated user files were preserved.
+- Next: Owner review of task/T-015-drift-data-foundation and repository-wide formatting if permitted.

@@ -22,7 +22,7 @@ Reviewer: <other agent or owner>
 
 ### T-015 — Drift local data foundation
 Owner: Claude Code CLI
-Status: in-progress
+Status: done
 Branch: task/T-015-drift-data-foundation
 Plan refs: §4, §5.2–§5.4, §15 M2; D-031
 Goal: Establish the version-1 Drift schema, production opener, and append-only event repository without live ingestion.
