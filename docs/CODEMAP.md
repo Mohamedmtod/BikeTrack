@@ -114,5 +114,12 @@ lib/data/database/app_database.g.dart — Generated Drift table models and typed
 lib/data/events/event_record.dart — Typed input and stored event value models
 lib/data/events/event_repository.dart — Validated append, ordered unprocessed reads, and selective processing
 test/data/database/app_database_test.dart — Windows schema, index, enum, and reopen tests
-test/data/events/event_repository_test.dart — Windows event integrity, processing, and reopen tests
+test/data/events/event_repository_test.dart — Windows event integrity, processing, reopen, and recent-read tests
+lib/app/recorder_runtime.dart — Observable recorder activity, callback count, and latest persistence/native errors
+lib/app/recorder_event_ingestion.dart — Serial raw RecorderBridge callback persistence and runtime updates
+lib/app/recorder_session.dart — Manual intent persistence and native recorder start/stop coordination
+lib/debug/recorder_debug_screen.dart — Manual controls, runtime errors, and recent-event debug console
+test/app/recorder_test_fakes.dart — Shared native API and event write fakes for application tests
+test/app/recorder_event_ingestion_test.dart — Raw callback mapping, timestamp, ordering, and failure tests
+test/app/recorder_session_test.dart — Manual start/stop intent and native error tests
 
