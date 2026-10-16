@@ -2,8 +2,8 @@
 
 Keep under 15 lines. Overwrite, don't append history.
 
-- Current milestone: M4 trip lifecycle phase 2
-- Last completed: T-011 TripStateMachine phase 2 (D-030)
-- Next: Owner review of task/T-011-trip-state-phase2
-- Blockers: none
-- Repo: github.com/Mohamedmtod/BikeTrack | Toolchain: Flutter 3.47.7 / Dart 3.13.5
+- Completed: T-015 Drift local data foundation (D-031); schema v1, generated bindings, and event repository.
+- Filtered build_runner succeeded in 7 seconds; no dependency changes in this continuation.
+- Validation: scoped `dart format lib/data test/data` ran; `flutter analyze` found no issues; `flutter test` passed (156 tests).
+- Blocker: `dart format .` was denied by the permission classifier; unrelated user files were preserved.
+- Next: Owner review of task/T-015-drift-data-foundation and repository-wide formatting if permitted.

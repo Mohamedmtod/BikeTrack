@@ -20,6 +20,19 @@ Reviewer: <other agent or owner>
 
 ---
 
+### T-015 — Drift local data foundation
+Owner: Claude Code CLI
+Status: done
+Branch: task/T-015-drift-data-foundation
+Plan refs: §4, §5.2–§5.4, §15 M2; D-031
+Goal: Establish the version-1 Drift schema, production opener, and append-only event repository without live ingestion.
+Allowed files: `lib/data/**`, `test/data/**`, `pubspec.yaml`, `pubspec.lock`, `docs/DECISIONS.md`, `docs/TASKS.md`, `docs/STATUS.md`, `docs/CODEMAP.md`
+Forbidden: everything else.
+Steps: Add only required Drift dependencies; implement seven tables and planned indexes; add injectable test database and event repository; commit generated code; update docs.
+Tests required: schema tables/indexes, event field and JSON integrity, insertion order, selective processing, immutable fields, and reopen persistence; `dart format .`, `flutter analyze`, `flutter test`.
+Acceptance criteria: schemaVersion 1; exactly D-031 tables and §5.3 indexes; raw events append-only except processed false-to-true; Windows tests pass; no runtime bridge/UI integration.
+Reviewer: Owner
+
 ### T-001 — Agent dry-run (Antigravity)
 Owner: Antigravity
 Status: done
