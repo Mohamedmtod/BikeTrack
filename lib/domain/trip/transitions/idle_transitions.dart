@@ -1,3 +1,4 @@
+import '../../activity/activity_type.dart';
 import '../../config/trip_config.dart';
 import '../gps_mode.dart';
 import '../segment_type.dart';
@@ -24,6 +25,7 @@ TripStepResult idleOrCompletedStep(
         tripStartMs: event.nowMs,
         segmentType: SegmentType.cycling,
         segmentStartMs: event.nowMs,
+        lastKnownMovementMs: event.nowMs,
         // lastActivityType/lastActivitySinceMs cleared — D-027(1)
         lastEventMs: s.lastEventMs,
       ),
@@ -39,6 +41,26 @@ TripStepResult idleOrCompletedStep(
         lastEventMs: s.lastEventMs,
       ),
       [StartGps(GpsMode.lowPower)],
+    );
+  }
+  if (s.isIdle &&
+      event is ActivityChanged &&
+      event.activity.type == ActivityType.cycling) {
+    final startMs = event.activity.sinceMs > event.nowMs
+        ? event.nowMs
+        : event.activity.sinceMs;
+    return TripStepResult(
+      TripState(
+        status: TripStatus.active,
+        tripStartMs: startMs,
+        segmentType: SegmentType.cycling,
+        segmentStartMs: startMs,
+        lastActivityType: ActivityType.cycling,
+        lastActivitySinceMs: event.activity.sinceMs,
+        lastKnownMovementMs: event.nowMs,
+        lastEventMs: s.lastEventMs,
+      ),
+      [StartGps(GpsMode.high), OpenSegment(SegmentType.cycling, startMs)],
     );
   }
   return TripStepResult(s, const <TripCommand>[]);

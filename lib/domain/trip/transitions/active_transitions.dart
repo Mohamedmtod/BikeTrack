@@ -4,6 +4,7 @@ import '../../config/trip_config.dart';
 import '../../activity/activity_type.dart';
 import '../gps_mode.dart';
 import '../segment_type.dart';
+import '../trip_close_reason.dart';
 import '../trip_command.dart';
 import '../trip_event.dart';
 import '../trip_state.dart';
@@ -26,19 +27,47 @@ SegmentType? _toSegmentType(ActivityType type) => switch (type) {
 /// Moving activity != current segment >= modeChangeMs (elapsed from clamped switchAt) -> segment switch.
 TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
   if (event is UserStop) {
+    final endMs = max(s.segmentStartMs ?? s.tripStartMs!, event.nowMs);
     return TripStepResult(
       TripState(
         status: TripStatus.completed,
         tripStartMs: s.tripStartMs,
         lastActivityType: s.lastActivityType,
         lastActivitySinceMs: s.lastActivitySinceMs,
+        lastKnownMovementMs: endMs,
+        closeReason: TripCloseReason.userStopped,
         lastEventMs: s.lastEventMs,
       ),
-      [CloseSegment(event.nowMs), const StopGps(), EndTrip(event.nowMs)],
+      [CloseSegment(endMs), const StopGps(), EndTrip(endMs)],
     );
   }
   if (event is UserStart || event is NfcScan) {
     return TripStepResult(s, [const AskOpenTripDecision()]);
+  }
+
+  if (s.segmentType == SegmentType.gap && event is ActivityChanged) {
+    final nextSegment = _toSegmentType(event.activity.type);
+    if (nextSegment != null) {
+      final switchAt = max(
+        s.segmentStartMs!,
+        event.activity.sinceMs > event.nowMs
+            ? event.nowMs
+            : event.activity.sinceMs,
+      );
+      return TripStepResult(
+        TripState(
+          status: TripStatus.active,
+          tripStartMs: s.tripStartMs,
+          segmentType: nextSegment,
+          segmentStartMs: switchAt,
+          lastActivityType: s.lastActivityType,
+          lastActivitySinceMs: s.lastActivitySinceMs,
+          lastKnownMovementMs: s.lastKnownMovementMs,
+          lastEventMs: s.lastEventMs,
+        ),
+        [CloseSegment(switchAt), OpenSegment(nextSegment, switchAt)],
+      );
+    }
   }
 
   final lat = s.lastActivityType;
@@ -57,6 +86,7 @@ TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
           pausedSinceMs: pauseStart,
           lastActivityType: s.lastActivityType,
           lastActivitySinceMs: lasSince,
+          lastKnownMovementMs: pauseStart,
           lastEventMs: s.lastEventMs,
         ),
         [const StartGps(GpsMode.lowPower)],
@@ -79,6 +109,7 @@ TripStepResult activeStep(TripState s, TripEvent event, TripConfig config) {
             segmentStartMs: switchAt,
             lastActivityType: s.lastActivityType,
             lastActivitySinceMs: lasSince,
+            lastKnownMovementMs: s.lastKnownMovementMs,
             lastEventMs: s.lastEventMs,
           ),
           [

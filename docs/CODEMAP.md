@@ -29,6 +29,7 @@ lib/domain/shared/recording_state.dart — Recording fidelity and power state en
 lib/domain/trip/distance_status.dart — Distance reliability indicator enum
 lib/domain/trip/gps_mode.dart — GPS power/accuracy mode enum commanded by TripStateMachine
 lib/domain/trip/segment_type.dart — Trip segment activity type enum
+lib/domain/trip/trip_close_reason.dart — Terminal trip close reason enum
 lib/domain/trip/trip_command.dart — Sealed command hierarchy with value equality produced by TripStateMachine
 lib/domain/trip/trip_event.dart — Sealed event hierarchy consumed by TripStateMachine
 lib/domain/trip/trip_state.dart — Immutable trip state with idle factory, isIdle getter, and copyWith
@@ -39,6 +40,8 @@ lib/domain/trip/transitions/active_transitions.dart — Active status transition
 lib/domain/trip/transitions/idle_transitions.dart — Idle and completed status transition rules
 lib/domain/trip/transitions/paused_transitions.dart — Paused status transition rules (resume, stop, open-trip guard)
 lib/domain/trip/transitions/pending_transitions.dart — Pending status transition rules (cycling detect, timeout)
+lib/domain/trip/transitions/recovery_transitions.dart — GPS-gap and recovery terminal transition rules
+lib/domain/trip/transitions/suspected_forgotten_transitions.dart — Suspected-forgotten transition and terminal closure rules
 test/helpers/gps_helpers.dart — Shared helper functions and test fixture constants
 test/fixtures/stationary_drift_30min.csv — Stationary GPS drift replay fixture spanning 30 minutes
 test/fixtures/traffic_light_stops.csv — Cycling replay fixture with five 60-second stationary stops
@@ -69,6 +72,7 @@ test/domain/shared/recording_state_test.dart — Unit test for RecordingState en
 test/domain/trip/distance_status_test.dart — Unit test for DistanceStatus enum values
 test/domain/trip/scenarios/active_paused_test.dart — Scenario tests 9–17, 20 for active and paused TripStateMachine transitions
 test/domain/trip/scenarios/d027_regression_test.dart — Regression tests 23–26 for D-027 stale-evidence clearing and monotonic timestamp clamping
+test/domain/trip/scenarios/phase2_test.dart — D-030 phase-2 trip lifecycle, recovery, and monotonicity tests
 test/domain/trip/scenarios/idle_pending_test.dart — Scenario tests 1–8 for idle and pending TripStateMachine transitions
 test/domain/trip/scenarios/property_test.dart — Tests 18, 19, 21 (edge cases) and 22, 27 (property tests)
 test/domain/trip/segment_type_test.dart — Unit test for SegmentType enum values

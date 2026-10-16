@@ -25,6 +25,7 @@ export 'shared/recording_state.dart';
 export 'trip/distance_status.dart';
 export 'trip/gps_mode.dart';
 export 'trip/segment_type.dart';
+export 'trip/trip_close_reason.dart';
 export 'trip/trip_command.dart';
 export 'trip/trip_event.dart';
 export 'trip/trip_state.dart';
