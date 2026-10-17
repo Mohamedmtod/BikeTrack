@@ -1,5 +1,5 @@
 # STATUS — BikeTrack
 
-- T-020 implements D-036 on its task branch: recording home, accepted projected blue MapKit routes, derived distance/reliability, and terminal ride history/detail.
-- Route pieces disconnect at gaps and anchor resets; debug retry and local diagnostic export remain reachable.
-- `dart format .` clean, `flutter analyze` clean, `flutter test` passed (222 tests); native Swift MapKit compilation and iPhone behavior require owner verification.
+- T-020 UI correction on its task branch: Ride/History/Debug navigation, plain-language live status and actions, readable saved-ride cards and details.
+- Route and distance still derive from projected GPS only; gaps remain disconnected. Debug retry, raw evidence and local diagnostic export remain available.
+- `dart format .` completed, `flutter analyze` clean, full `flutter test` passed; native iOS MapKit/device behavior requires owner verification.

@@ -51,7 +51,7 @@ test/fixtures/gps_tunnel_gap.csv — GPS gap replay fixture
 test/fixtures/real_trip_regression_template.csv — Template-format real-trip regression replay fixture
 test/replay/replay_harness.dart — Test-only CSV parser and public-domain input adapters
 test/replay/domain_replay_test.dart — CSV replay tests for GPS and activity golden scenarios
-test/widget_test.dart — Recorder, diagnostics, and projected ride UI tests
+test/widget_test.dart — Recorder, diagnostics, navigation, and human-facing ride flow widget tests
 test/domain/activity/activity_classifier_config_test.dart — Unit tests for ActivityClassifierConfig assert validation
 test/domain/activity/activity_classifier_test.dart — Unit and property tests for ActivityClassifier
 test/domain/activity/activity_state_config_test.dart — Unit test for ActivityStateConfig assert validation
@@ -142,13 +142,15 @@ test/app/recorder_session_test.dart — Manual start/stop intent and native erro
 lib/data/trips/projected_trip_repository.dart — Transactional projected active, terminal, segment and GPS evidence queries in stable order
 lib/presentation/ride_route.dart — Testable accepted route pieces, on-demand distance and conservative reliability derivation
 lib/ui/ride_map_view.dart — Flutter iOS MapKit PlatformView and typed Pigeon route payload adapter
-lib/ui/ride_display.dart — Ride display configuration, distance and timing labels
-lib/ui/rides_screen.dart — Manual recording home with projected route and navigation
-lib/ui/ride_history_screen.dart — Terminal projected ride history with derived distance and status
-lib/ui/ride_detail_screen.dart — Selected ride map, segments, gap and reliability details
+lib/presentation/ride_presentation.dart — Testable human-facing ride state, distance, time and location labels
+lib/ui/ride_display.dart — Ride screen layout and refresh configuration
+lib/ui/rides_screen.dart — Simple manual ride home and Ride/History/Debug navigation
+lib/ui/ride_history_screen.dart — Readable completed ride cards with derived distance and reliability
+lib/ui/ride_detail_screen.dart — Selected ride map, timing and route interruption details
 ios/Runner/AppDelegate.swift — Registers recorder and native MapKit route view with blue separate polylines
 test/helpers/ride_fixture.dart — Shared projected-trip SQLite fixtures for data, presentation and widget tests
 test/data/trips/projected_trip_repository_test.dart — Terminal filtering, insertion ordering and snapshot-selected active ride tests
 test/presentation/ride_route_test.dart — Accepted/rejected, gap/reset and measured/partial/unknown derivation tests
+test/presentation/ride_presentation_test.dart — Human-facing state, duration, distance and reliability label tests
 test/bridge/route_map_test.dart — Pigeon route-piece payload and Dart channel boundary tests
 

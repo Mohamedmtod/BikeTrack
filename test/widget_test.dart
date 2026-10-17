@@ -208,6 +208,8 @@ void main() {
       expect(find.textContaining('Native error: stop:'), findsOneWidget);
       expect(find.text('Persisted callbacks: 1'), findsOneWidget);
 
+      await tester.tap(find.text('Advanced recorder controls'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'manual-1');
       await tester.tap(find.text('Start'));
       await tester.pumpAndSettle();
@@ -401,18 +403,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Projections: blocked'), findsOneWidget);
       expect(
-        find.text('#1 / system / processed-first / 100 / processed'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('#2 / system / blocked-second / 50 / pending'),
-        findsOneWidget,
-      );
-      expect(
         find.textContaining('Blocking event: #2 / blocked-second / 50'),
         findsOneWidget,
       );
-      expect(find.textContaining('"detail":"pending"'), findsWidgets);
       expect(
         find.textContaining(
           'Projection error: Bad state: projection unavailable',
@@ -420,11 +413,39 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Retry projections'), findsOneWidget);
-
+      await tester.scrollUntilVisible(
+        find.text('#1 / system / processed-first / 100 / processed'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.text('#1 / system / processed-first / 100 / processed'),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text('#2 / system / blocked-second / 50 / pending'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.text('#2 / system / blocked-second / 50 / pending'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('"detail":"pending"'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Retry projections'),
+        -100,
+        scrollable: find.byType(Scrollable).first,
+      );
       processor.fail = false;
       await tester.tap(find.text('Retry projections'));
       await tester.pumpAndSettle();
       expect(find.text('Projections: idle'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('#2 / system / blocked-second / 50 / processed'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.text('#2 / system / blocked-second / 50 / processed'),
         findsOneWidget,
@@ -474,13 +495,25 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Ready to ride'), findsOneWidget);
     expect(find.text('Start Ride'), findsOneWidget);
-    expect(find.text('Distance unknown'), findsOneWidget);
+    expect(find.text('Waiting for a GPS location…'), findsOneWidget);
+    expect(find.textContaining('km'), findsNothing);
     await tester.tap(find.text('Start Ride'));
     await projections.drained;
     await tester.pumpAndSettle();
+    expect(find.text('Recording'), findsOneWidget);
     expect(find.text('Stop Ride'), findsOneWidget);
-    expect(find.text('Distance unknown'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Elapsed  '),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('Elapsed  '), findsOneWidget);
+    expect(find.text('Distance unavailable'), findsOneWidget);
+    expect(find.text('Waiting for a GPS location…'), findsWidgets);
+    expect(find.textContaining('projection', findRichText: true), findsNothing);
+    expect(find.textContaining('payload', findRichText: true), findsNothing);
     await events.append(
       const NewEvent(
         tsUtc: 1000,
@@ -499,12 +532,20 @@ void main() {
     );
     runtime.callbackPersisted();
     await tester.pumpAndSettle();
-    expect(find.text('Distance unknown'), findsOneWidget);
+    expect(find.text('Distance unavailable'), findsOneWidget);
     projections.scheduleAutomatic();
     await projections.drained;
     await tester.pumpAndSettle();
-    expect(find.text('0.11 km (measured)'), findsOneWidget);
-    expect(find.text('Reliability: measured'), findsOneWidget);
+    expect(find.text('0.11 km'), findsOneWidget);
+    expect(find.text('Measured distance'), findsOneWidget);
+    await tester.tap(find.text('Stop Ride'));
+    await projections.drained;
+    await tester.pumpAndSettle();
+    expect(find.text('Your rides'), findsOneWidget);
+    expect(find.text('0.11 km'), findsOneWidget);
+    await tester.tap(find.text('View ride details  →'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ride detail'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -535,15 +576,122 @@ void main() {
       MaterialApp(home: RideHistoryScreen(trips: ProjectedTripRepository(db))),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('0.11 km (partial)'), findsOneWidget);
-    expect(find.textContaining('Reliability: partial'), findsOneWidget);
-    await tester.tap(find.byType(ListTile).first);
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('0.11 km'), findsOneWidget);
+    expect(
+      find.text('Partial distance · some sections missing'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('View ride details  →'));
     await tester.pumpAndSettle();
     expect(find.text('Ride detail'), findsOneWidget);
-    expect(find.text('Status: needsReview'), findsOneWidget);
-    expect(find.text('0.11 km (partial)'), findsOneWidget);
-    expect(find.text('Reliability: partial'), findsOneWidget);
-    expect(find.text('GPS gap'), findsOneWidget);
+    expect(find.text('State  Needs review'), findsOneWidget);
+    expect(find.text('0.11 km'), findsOneWidget);
+    expect(
+      find.text('Partial distance · some sections missing'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Route interruptions'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Route interruptions'), findsOneWidget);
+    expect(
+      find.textContaining('do not connect across that break'),
+      findsOneWidget,
+    );
+    expect(find.text('GPS gap'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('Ride, History and Debug tabs keep diagnostics reachable', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    final events = EventRepository(database);
+    final bridge = RecorderBridge(nativeApi: FakeNativeRecorderApi());
+    final runtime = RecorderRuntime();
+    final projections = ProjectionDrainCoordinator(
+      EventProjectionProcessor(database, _Ids()),
+      events,
+      runtime,
+    );
+    final session = RecorderSession(
+      bridge,
+      RawEventWriter(events),
+      runtime,
+      () => 1000,
+    );
+    final exporter = _StubExporter(database, runtime);
+    addTearDown(() async {
+      await projections.drained;
+      await bridge.dispose();
+      await database.close();
+      runtime.dispose();
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RidesScreen(
+          session: session,
+          runtime: runtime,
+          trips: ProjectedTripRepository(database),
+          events: events,
+          projections: projections,
+          exporter: exporter,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ready to ride'), findsOneWidget);
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No completed rides yet'), findsOneWidget);
+    await tester.tap(find.text('Debug'));
+    await tester.pumpAndSettle();
+    expect(find.text('Debug · diagnostics'), findsOneWidget);
+    expect(
+      find.textContaining('This diagnostic bundle may contain GPS coordinates'),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.text('Export diagnostics to Files'));
+    await tester.tap(find.text('Export diagnostics to Files'));
+    await tester.pumpAndSettle();
+    expect(exporter.calls, 1);
+    await tester.tap(find.text('Ride'));
+    await tester.pumpAndSettle();
+    expect(find.text('Start Ride'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'a saved ride without GPS has friendly detail and unknown distance',
+    (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(() => db.close());
+      await seedTrip(
+        db,
+        'no-route',
+        status: TripStatus.completed,
+        start: 1000,
+        end: 5000,
+      );
+      await seedSegment(db, 'empty', 'no-route', start: 1000, end: 5000);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RideHistoryScreen(trips: ProjectedTripRepository(db)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('Distance unavailable'), findsOneWidget);
+      await tester.tap(find.text('View ride details  →'));
+      await tester.pumpAndSettle();
+      expect(find.text('No route was recorded for this ride.'), findsOneWidget);
+      expect(find.text('Distance unavailable'), findsOneWidget);
+      expect(find.text('Distance not yet available'), findsOneWidget);
+      expect(find.textContaining('Started  '), findsOneWidget);
+      expect(find.textContaining('Ended  '), findsOneWidget);
+    },
+  );
 }

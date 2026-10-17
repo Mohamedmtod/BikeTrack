@@ -22,7 +22,7 @@ Reviewer: <other agent or owner>
 
 ### T-020 — Live rides, routes, and derived distance UI
 Owner: Claude Code CLI
-Status: in-progress
+Status: review
 Branch: task/T-020-live-rides-ui
 Plan refs: D-033–D-036, §5.2–§5.4, §6.4, §7.1–§7.2
 Goal: Personal manual ride home, projected live MapKit route, derived reliable distances, terminal ride history and detail; debug/export remains accessible.

@@ -34,10 +34,16 @@ List<pigeon.MapRoutePiece> routePayload(RideRoute route) => [
 ];
 
 class RideMapView extends StatefulWidget {
-  const RideMapView({super.key, required this.route, this.client});
+  const RideMapView({
+    super.key,
+    required this.route,
+    this.client,
+    this.emptyMessage = 'Waiting for a GPS location…',
+  });
 
   final RideRoute route;
   final RouteMapClient? client;
+  final String emptyMessage;
 
   @override
   State<RideMapView> createState() => _RideMapViewState();
@@ -61,7 +67,9 @@ class _RideMapViewState extends State<RideMapView> {
         })
         .catchError((Object error) {
           if (mounted && revision == _revision) {
-            setState(() => _error = 'Map unavailable: $error');
+            setState(
+              () => _error = 'Map unavailable right now. Your ride data is still available.',
+            );
           }
         });
   }
@@ -80,8 +88,14 @@ class _RideMapViewState extends State<RideMapView> {
 
   @override
   Widget build(BuildContext context) {
+    final empty = widget.route.pieces.isEmpty;
     if (defaultTargetPlatform != TargetPlatform.iOS) {
-      return const Center(child: Text('Route map requires iOS MapKit'));
+      return Center(
+        child: Text(
+          empty ? widget.emptyMessage : 'Route map is available on iPhone.',
+          textAlign: TextAlign.center,
+        ),
+      );
     }
     return Stack(
       children: [
@@ -93,10 +107,24 @@ class _RideMapViewState extends State<RideMapView> {
             _update();
           },
         ),
+        if (empty)
+          Center(
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(widget.emptyMessage, textAlign: TextAlign.center),
+              ),
+            ),
+          ),
         if (_error != null)
           Align(
             alignment: Alignment.bottomCenter,
-            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(_error!),
+              ),
+            ),
           ),
       ],
     );

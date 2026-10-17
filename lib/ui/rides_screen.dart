@@ -10,6 +10,7 @@ import '../data/events/event_repository.dart';
 import '../data/trips/projected_trip_repository.dart';
 import '../debug/recorder_debug_screen.dart';
 import '../domain/trip/distance_status.dart';
+import '../presentation/ride_presentation.dart';
 import '../presentation/ride_route.dart';
 import 'ride_display.dart';
 import 'ride_history_screen.dart';
@@ -46,6 +47,8 @@ class _RidesScreenState extends State<RidesScreen> {
   RideRoute? _route;
   String? _error;
   bool _busy = false;
+  bool _stopping = false;
+  int _tab = 0;
   int _lastRevision = 0;
   int _readRevision = 0;
   int _attemptSequence = 0;
@@ -59,7 +62,7 @@ class _RidesScreenState extends State<RidesScreen> {
     _lastRevision = widget.runtime.projectionRevision;
     widget.runtime.addListener(_onRuntime);
     _ticker = Timer.periodic(RideDisplayConfig.refreshInterval, (_) {
-      if (mounted && _active != null) setState(() {});
+      if (mounted && _active != null && _tab == 0) setState(() {});
     });
     _refresh();
   }
@@ -71,7 +74,7 @@ class _RidesScreenState extends State<RidesScreen> {
     }
   }
 
-  Future<void> _refresh() async {
+  Future<void> _refresh({bool clearError = false}) async {
     final revision = ++_readRevision;
     try {
       final active = await widget.trips.active();
@@ -79,41 +82,73 @@ class _RidesScreenState extends State<RidesScreen> {
         setState(() {
           _active = active;
           _route = active == null ? null : RideRoute.fromEvidence(active);
-          _error = null;
+          if (clearError) _error = null;
         });
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted && revision == _readRevision) {
-        setState(() => _error = 'Could not load projected ride: $error');
+        setState(
+          () => _error = 'Could not load your ride. Try again or open Debug.',
+        );
       }
     }
   }
 
   Future<void> _start() async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       final attemptId = '${_now.microsecondsSinceEpoch}-${++_attemptSequence}';
       final result = await widget.session.startManual(attemptId);
       if (!result.started && mounted) {
         setState(
-          () => _error = 'Start rejected: ${result.reason ?? 'unknown'}',
+          () => _error =
+              'Ride could not start. Check location access or open Debug.',
         );
       }
-    } catch (error) {
-      if (mounted) setState(() => _error = 'Could not start ride: $error');
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'Ride could not start. Check location access or open Debug.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _stop() async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _stopping = true;
+      _error = null;
+    });
     try {
       await widget.session.stopManual();
-    } catch (error) {
-      if (mounted) setState(() => _error = 'Could not stop ride: $error');
+      await widget.projections.drained;
+      await _refresh();
+      if (mounted &&
+          _active == null &&
+          widget.runtime.projectionState != ProjectionDrainState.blocked) {
+        setState(() => _tab = 1);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'Ride could not be saved normally. Check History or open Debug.',
+        );
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _stopping = false;
+        });
+      }
     }
   }
 
@@ -126,101 +161,161 @@ class _RidesScreenState extends State<RidesScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final route = _route;
-    final recording =
-        widget.runtime.activity == RecorderActivity.recording ||
-        widget.runtime.activity == RecorderActivity.starting;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('BikeTrack'),
-        actions: [
-          IconButton(
-            tooltip: 'Ride history',
-            icon: const Icon(Icons.history),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => RideHistoryScreen(
-                  trips: widget.trips,
-                  mapClient: widget.mapClient,
-                ),
-              ),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('BikeTrack')),
+    bottomNavigationBar: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_tab == 0) _rideAction(),
+        NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (index) {
+            if (index == 0) _refresh();
+            setState(() => _tab = index);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.directions_bike),
+              label: 'Ride',
             ),
-          ),
-          IconButton(
-            tooltip: 'Recorder diagnostics',
-            icon: const Icon(Icons.bug_report_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => RecorderDebugScreen(
-                  session: widget.session,
-                  runtime: widget.runtime,
-                  repository: widget.events,
-                  projections: widget.projections,
-                  exporter: widget.exporter,
-                ),
-              ),
+            NavigationDestination(icon: Icon(Icons.history), label: 'History'),
+            NavigationDestination(
+              icon: Icon(Icons.bug_report_outlined),
+              label: 'Debug',
             ),
-          ),
-        ],
+          ],
+        ),
+      ],
+    ),
+    body: switch (_tab) {
+      0 => _rideBody(),
+      1 => RideHistoryScreen(
+        trips: widget.trips,
+        mapClient: widget.mapClient,
+        embedded: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      _ => RecorderDebugScreen(
+        session: widget.session,
+        runtime: widget.runtime,
+        repository: widget.events,
+        projections: widget.projections,
+        exporter: widget.exporter,
+        embedded: true,
+      ),
+    },
+  );
+
+  Widget _rideAction() => ListenableBuilder(
+    listenable: widget.runtime,
+    builder: (context, _) {
+      final activity = widget.runtime.activity;
+      final recording = activity == RecorderActivity.recording;
+      final state = RidePresentation.homeState(
+        activity: activity,
+        hasOpenRide: _active != null,
+        stopping: _stopping,
+        blocked: widget.runtime.projectionState == ProjectionDrainState.blocked,
+        error: _error != null,
+      );
+      if (!recording && (state != RideHomeState.ready || _active != null)) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+        child: SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: _busy || activity == RecorderActivity.starting
+                ? null
+                : recording
+                ? _stop
+                : _start,
+            icon: Icon(
+              recording ? Icons.stop_circle_outlined : Icons.play_arrow,
+            ),
+            label: Text(recording ? 'Stop Ride' : 'Start Ride'),
+          ),
+        ),
+      );
+    },
+  );
+
+  Widget _rideBody() => ListenableBuilder(
+    listenable: widget.runtime,
+    builder: (context, _) {
+      final activity = widget.runtime.activity;
+      final recording = activity == RecorderActivity.recording;
+      final blocked =
+          widget.runtime.projectionState == ProjectionDrainState.blocked;
+      final state = RidePresentation.homeState(
+        activity: activity,
+        hasOpenRide: _active != null,
+        stopping: _stopping,
+        blocked: blocked,
+        error: _error != null,
+      );
+      final route = _route;
+      return ListView(
+        padding: const EdgeInsets.all(20),
         children: [
-          SizedBox(
-            height: RideDisplayConfig.mapHeight,
-            child: RideMapView(
-              route: route ?? const RideRoute([], null, DistanceStatus.unknown),
-              client: widget.mapClient,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListenableBuilder(
-            listenable: widget.runtime,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Recorder: ${widget.runtime.activity.name}'),
-                Text('Projections: ${widget.runtime.projectionState.name}'),
-                if (widget.runtime.projectionState ==
-                    ProjectionDrainState.blocked)
-                  const Text(
-                    'Route may be incomplete. Open diagnostics to retry projections.',
-                  ),
-              ],
-            ),
-          ),
           Text(
-            _active == null
-                ? 'No active projected ride'
-                : 'Ride: ${_active!.trip.status.name}',
+            RidePresentation.homeTitle(state),
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
-          Text(
-            'Elapsed: ${_active == null ? '--:--:--' : elapsedTime(_active!.trip.startTimeUtc, _now.millisecondsSinceEpoch)}',
-          ),
-          Text(route == null ? 'Distance unknown' : rideDistance(route)),
-          if (route != null) Text('Reliability: ${route.status.name}'),
-          if (_error != null)
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-          const SizedBox(height: 12),
-          if (!recording && _active == null)
-            FilledButton(
-              onPressed: _busy ? null : _start,
-              child: const Text('Start Ride'),
+          const SizedBox(height: 8),
+          Text(switch (state) {
+            RideHomeState.ready => 'Tap Start Ride when you are ready to go.',
+            RideHomeState.recording => 'Your ride is in progress.',
+            RideHomeState.stopping => 'Finishing and saving your ride…',
+            RideHomeState.attention =>
+              blocked
+                  ? 'Your route is not updating. Open Debug to retry.'
+                  : _error ??
+                        (_active != null && activity == RecorderActivity.idle
+                            ? 'Recording stopped, but this ride is still open. Open Debug to check it.'
+                            : 'Check your ride in History or open Debug.'),
+          }),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: SizedBox(
+                height: RideDisplayConfig.mapHeight,
+                child: RideMapView(
+                  route:
+                      route ??
+                      const RideRoute([], null, DistanceStatus.unknown),
+                  client: widget.mapClient,
+                ),
+              ),
             ),
-          if (recording || _active != null)
-            FilledButton(
-              onPressed: _busy ? null : _stop,
-              child: const Text('Stop Ride'),
-            ),
-          TextButton(
-            onPressed: _refresh,
-            child: const Text('Refresh projected ride'),
           ),
+          const SizedBox(height: 20),
+          if (recording || _active != null) ...[
+            if (_active != null)
+              Text(
+                'Elapsed  ${RidePresentation.elapsed(_active!.trip.startTimeUtc, _now.millisecondsSinceEpoch)}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            const SizedBox(height: 8),
+            Text(
+              RidePresentation.distance(route),
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(RidePresentation.reliability(route)),
+            const SizedBox(height: 8),
+            Text(RidePresentation.locationStatus(route, recording: recording)),
+            const SizedBox(height: 20),
+          ],
+          if (state == RideHomeState.attention && !recording)
+            TextButton(
+              onPressed: () => _refresh(clearError: true),
+              child: const Text('Try again'),
+            ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
 }

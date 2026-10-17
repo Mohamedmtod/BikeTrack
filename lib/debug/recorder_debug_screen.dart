@@ -15,6 +15,7 @@ class RecorderDebugScreen extends StatefulWidget {
     required this.repository,
     required this.projections,
     required this.exporter,
+    this.embedded = false,
   });
 
   final RecorderSession session;
@@ -22,6 +23,7 @@ class RecorderDebugScreen extends StatefulWidget {
   final EventRepository repository;
   final ProjectionDrainCoordinator projections;
   final DiagnosticBundleExporter exporter;
+  final bool embedded;
 
   @override
   State<RecorderDebugScreen> createState() => _RecorderDebugScreenState();
@@ -122,80 +124,91 @@ class _RecorderDebugScreenState extends State<RecorderDebugScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Recorder debug')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _attemptId,
-            decoration: const InputDecoration(labelText: 'Attempt ID'),
-          ),
-          Row(
-            children: [
-              ElevatedButton(onPressed: _start, child: const Text('Start')),
-              const SizedBox(width: 8),
-              ElevatedButton(onPressed: _stop, child: const Text('Stop')),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: _refresh,
-                tooltip: 'Refresh events',
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-          ListenableBuilder(
-            listenable: widget.runtime,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final body = ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Debug · diagnostics',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const Text('Technical information and local support export.'),
+        ExpansionTile(
+          title: const Text('Advanced recorder controls'),
+          children: [
+            TextField(
+              controller: _attemptId,
+              decoration: const InputDecoration(labelText: 'Attempt ID'),
+            ),
+            Row(
               children: [
-                Text('Recorder: ${widget.runtime.activity.name}'),
-                Text(
-                  'Persisted callbacks: ${widget.runtime.persistedCallbackCount}',
-                ),
-                Text(
-                  'Persistence error: ${widget.runtime.latestPersistenceError ?? 'none'}',
-                ),
-                Text(
-                  'Native error: ${widget.runtime.latestNativeError ?? 'none'}',
-                ),
-                Text('Projections: ${widget.runtime.projectionState.name}'),
-                if (widget.runtime.projectionState ==
-                    ProjectionDrainState.blocked) ...[
-                  if (widget.runtime.blockingProjectionEvent case final event?)
-                    Text(
-                      'Blocking event: #${event.id} / ${event.type} / ${event.tsUtc}\n${event.payloadJson}',
-                    ),
-                  Text(
-                    'Projection error: ${widget.runtime.latestProjectionError ?? 'unknown'}',
-                  ),
-                  ElevatedButton(
-                    onPressed: _retryProjections,
-                    child: const Text('Retry projections'),
-                  ),
-                ],
+                ElevatedButton(onPressed: _start, child: const Text('Start')),
+                const SizedBox(width: 8),
+                ElevatedButton(onPressed: _stop, child: const Text('Stop')),
               ],
             ),
-          ),
-          const Text(privacyWarning),
-          ElevatedButton(
-            onPressed: _exporting ? null : _export,
-            child: const Text('Export diagnostics to Files'),
-          ),
-          if (_exportOutcome != null) Text(_exportOutcome!),
-          if (_readError != null) Text('Recent events error: $_readError'),
-          const Text('Recent events'),
-          for (final event in _events)
-            ListTile(
-              title: Text(
-                '#${event.id} / ${event.source.name} / ${event.type} / ${event.tsUtc} / ${event.processed ? 'processed' : 'pending'}',
+          ],
+        ),
+        IconButton(
+          onPressed: _refresh,
+          tooltip: 'Refresh events',
+          icon: const Icon(Icons.refresh),
+        ),
+        ListenableBuilder(
+          listenable: widget.runtime,
+          builder: (context, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Recorder: ${widget.runtime.activity.name}'),
+              Text(
+                'Persisted callbacks: ${widget.runtime.persistedCallbackCount}',
               ),
-              subtitle: Text(
-                'Trip: ${event.tripId ?? 'none'}\n${event.payloadJson}',
+              Text(
+                'Persistence error: ${widget.runtime.latestPersistenceError ?? 'none'}',
               ),
+              Text(
+                'Native error: ${widget.runtime.latestNativeError ?? 'none'}',
+              ),
+              Text('Projections: ${widget.runtime.projectionState.name}'),
+              if (widget.runtime.projectionState ==
+                  ProjectionDrainState.blocked) ...[
+                if (widget.runtime.blockingProjectionEvent case final event?)
+                  Text(
+                    'Blocking event: #${event.id} / ${event.type} / ${event.tsUtc}\n${event.payloadJson}',
+                  ),
+                Text(
+                  'Projection error: ${widget.runtime.latestProjectionError ?? 'unknown'}',
+                ),
+                ElevatedButton(
+                  onPressed: _retryProjections,
+                  child: const Text('Retry projections'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const Text(privacyWarning),
+        ElevatedButton(
+          onPressed: _exporting ? null : _export,
+          child: const Text('Export diagnostics to Files'),
+        ),
+        if (_exportOutcome != null) Text(_exportOutcome!),
+        if (_readError != null) Text('Recent events error: $_readError'),
+        const Text('Recent events'),
+        for (final event in _events)
+          ListTile(
+            title: Text(
+              '#${event.id} / ${event.source.name} / ${event.type} / ${event.tsUtc} / ${event.processed ? 'processed' : 'pending'}',
             ),
-        ],
-      ),
+            subtitle: Text(
+              'Trip: ${event.tripId ?? 'none'}\n${event.payloadJson}',
+            ),
+          ),
+      ],
+    );
+    if (widget.embedded) return body;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Debug')),
+      body: body,
     );
   }
 }
